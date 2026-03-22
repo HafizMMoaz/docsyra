@@ -1,0 +1,34 @@
+{
+	"name": "docsyra",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {
+		"dev": "next dev --turbopack",
+		"cycle": "git add . ; git commit -m 'cycle' ; git push origin main",
+		"build": "next build",
+		"start": "next start",
+		"lint": "next lint",
+		"pages:build": "npx @cloudflare/next-on-pages",
+		"preview": "npm run pages:build && wrangler pages dev",
+		"deploy": "npm run pages:build && wrangler pages deploy",
+		"cf-typegen": "wrangler types --env-interface CloudflareEnv ./env.d.ts"
+	},
+	"dependencies": {
+		"framer-motion": "^12.23.0",
+		"next": "^15.5.14",
+		"react": "^19.0.0",
+		"react-dom": "^19.0.0",
+		"react-icons": "^5.5.0"
+	},
+	"devDependencies": {
+		"@cloudflare/next-on-pages": "^1.13.12",
+		"@tailwindcss/postcss": "^4",
+		"@types/node": "^20.19.4",
+		"@types/react": "^19",
+		"@types/react-dom": "^19",
+		"tailwindcss": "^4",
+		"typescript": "^5",
+		"vercel": "^50.35.0",
+		"wrangler": "^4.23.0"
+	}
+}
