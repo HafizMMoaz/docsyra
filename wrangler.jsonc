@@ -13,68 +13,19 @@
 	"observability": {
 		"enabled": true
 	},
-
-	/**
-	 * Environment Variables - Available in all environments
-	 * Accessible via process.env on server-side
-	 * Must be prefixed with NEXT_PUBLIC_ to be accessible on client-side
-	 */
-	"vars": {
-		// Add your public environment variables here
-		// Example: "APP_VERSION": "1.0.0"
-	},
-
-	/**
-	 * Environment-specific configurations
-	 * Production: deployed to production domain
-	 * Preview: deployed to preview URLs for testing
-	 */
+	"vars": {},
 	"env": {
 		"production": {
-			"name": "roduction",
+			"name": "docsyra-production",
 			"routes": [
 				{ "pattern": "docsyra.com", "zone_name": "docsyra.com" }
 			],
-			"vars": {
-				// Production-specific environment variables
-				// Example: "NODE_ENV": "production"
-			}
+			"vars": {}
 		},
 		"preview": {
-			"name": "preview",
+			"name": "docsyra-preview",
 			"routes": [],
-			"vars": {
-				// Preview-specific environment variables
-				// Example: "NODE_ENV": "preview"
-			}
+			"vars": {}
 		}
-	},
-
-	/**
-	 * Smart Placement
-	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
-	 */
-	// "placement": { "mode": "smart" },
-
-	/**
-	 * Bindings
-	 * Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
-	 * databases, object storage, AI inference, real-time communication and more.
-	 * https://developers.cloudflare.com/workers/runtime-apis/bindings/
-	 * 
-	 * Note: Use secrets to store sensitive data.
-	 * https://developers.cloudflare.com/workers/configuration/secrets/
-	 */
-
-	/**
-	 * Static Assets
-	 * https://developers.cloudflare.com/workers/static-assets/binding/
-	 */
-	// "assets": { "directory": "./public/", "binding": "ASSETS" },
-
-	/**
-	 * Service Bindings (communicate between multiple Workers)
-	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
-	 */
-	// "services": [{ "binding": "MY_SERVICE", "service": "my-service" }]
+	}
 }
