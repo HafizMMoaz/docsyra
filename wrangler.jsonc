@@ -17,14 +17,10 @@
 	"env": {
 		"production": {
 			"name": "docsyra-production",
-			"routes": [
-				{ "pattern": "docsyra.com", "zone_name": "docsyra.com" }
-			],
 			"vars": {}
 		},
 		"preview": {
 			"name": "docsyra-preview",
-			"routes": [],
 			"vars": {}
 		}
 	}
