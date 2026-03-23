@@ -4,6 +4,8 @@ type EditorPageProps = {
   }>;
 };
 
+export const runtime = "edge";
+
 export default async function EditorPage({ params }: EditorPageProps) {
   const { id } = await params;
 
