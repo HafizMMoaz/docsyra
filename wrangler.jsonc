@@ -1,0 +1,52 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "docsyra",
+	"compatibility_date": "2025-07-05",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"pages_build_output_dir": ".vercel/output/static",
+	"observability": {
+		"enabled": true
+	},
+	"vars": {
+		"ENV_NAME": "local",
+		"GOOGLE_CLIENT_ID": "20679416807-1261uspg6gmve8tt9m21eqd18dcghol2.apps.googleusercontent.com",
+		"GOOGLE_CLIENT_SECRET": "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",
+		"GITHUB_CLIENT_ID": "Ov23liUlceVJbHP788uO",
+		"GITHUB_CLIENT_SECRET": "3f62d3ce6e3d0682c0b3ca75e6caf9b6fc0a0dd2"
+	},
+	"env": {
+		"production": {
+			"name": "docsyra-production",
+			"vars": {
+				"ENV_NAME": "production",
+				"GOOGLE_CLIENT_ID": "20679416807-1261uspg6gmve8tt9m21eqd18dcghol2.apps.googleusercontent.com",
+				"GOOGLE_CLIENT_SECRET": "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",
+				"GITHUB_CLIENT_ID": "Ov23liUlceVJbHP788uO",
+				"GITHUB_CLIENT_SECRET": "3f62d3ce6e3d0682c0b3ca75e6caf9b6fc0a0dd2"
+			}
+		},
+		"preview": {
+			"name": "docsyra-preview",
+			"vars": {
+				"ENV_NAME": "preview",
+				"GOOGLE_CLIENT_ID": "20679416807-1261uspg6gmve8tt9m21eqd18dcghol2.apps.googleusercontent.com",
+				"GOOGLE_CLIENT_SECRET": "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",
+				"GITHUB_CLIENT_ID": "Ov23liUlceVJbHP788uO",
+				"GITHUB_CLIENT_SECRET": "3f62d3ce6e3d0682c0b3ca75e6caf9b6fc0a0dd2"
+			}
+		}
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "docsyra-db",
+			"database_id": "1139630c-8b1e-440e-9b42-58b2ae1d4d03"
+		}
+	]
+}

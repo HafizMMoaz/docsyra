@@ -1,0 +1,41 @@
+import { clearSessionCookie, createLucia, setSessionCookie } from "@/lib/auth";
+import { getEnv } from "@/lib/cloudflare/route-context";
+import { readSessionIdFromRequest } from "@/lib/auth/lucia";
+
+export const runtime = "edge";
+
+export async function GET(
+  request: Request,
+  context: { params: Promise<Record<string, string | string[] | undefined>> },
+): Promise<Response> {
+  const env = getEnv(context);
+  const lucia = createLucia(env);
+  const sessionId = readSessionIdFromRequest(request, env);
+
+  if (!sessionId) {
+    return Response.json({ user: null }, { status: 200 });
+  }
+
+  const result = await lucia.validateSession(sessionId);
+  const headers = new Headers();
+
+  if (!result.session || !result.user) {
+    clearSessionCookie(headers, env);
+    return Response.json({ user: null }, { status: 200, headers });
+  }
+
+  if (result.session.fresh) {
+    setSessionCookie(headers, result.session.id, env);
+  }
+
+  return Response.json(
+    {
+      user: {
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+      },
+    },
+    { status: 200, headers },
+  );
+}
