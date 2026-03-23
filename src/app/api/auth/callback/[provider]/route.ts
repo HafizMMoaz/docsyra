@@ -220,10 +220,13 @@ export async function GET(
     setSessionCookie(headers, session.id, env);
 
     return new Response(null, { status: 302, headers });
-  } catch {
+  } catch (error) {
+    console.error("OAuth Error:", error);
+
+    const errorMessage = error instanceof Error ? error.message : String(error);
     const headers = new Headers();
     clearOAuthCookies(headers, provider);
     clearSessionCookie(headers, env);
-    return Response.json({ success: false, error: "OAuth callback failed" }, { status: 400, headers });
+    return Response.json({ success: false, error: errorMessage }, { status: 500, headers });
   }
 }
