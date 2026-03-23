@@ -23,6 +23,13 @@
 	"env": {
 		"production": {
 			"name": "docsyra-production",
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "docsyra-db",
+					"database_id": "1139630c-8b1e-440e-9b42-58b2ae1d4d03"
+				}
+			],
 			"vars": {
 				"ENV_NAME": "production",
 				"GOOGLE_CLIENT_ID": "20679416807-1261uspg6gmve8tt9m21eqd18dcghol2.apps.googleusercontent.com",
@@ -33,6 +40,13 @@
 		},
 		"preview": {
 			"name": "docsyra-preview",
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "docsyra-db",
+					"database_id": "1139630c-8b1e-440e-9b42-58b2ae1d4d03"
+				}
+			],
 			"vars": {
 				"ENV_NAME": "preview",
 				"GOOGLE_CLIENT_ID": "20679416807-1261uspg6gmve8tt9m21eqd18dcghol2.apps.googleusercontent.com",
