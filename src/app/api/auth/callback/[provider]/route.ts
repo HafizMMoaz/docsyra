@@ -1,4 +1,5 @@
 import { clearSessionCookie, createLucia, setSessionCookie } from "@/lib/auth";
+import { getRequestContext } from "@cloudflare/next-on-pages";
 import {
   clearOAuthCookies,
   createGitHubOAuth,
@@ -8,7 +9,6 @@ import {
   type OAuthProvider,
 } from "@/lib/auth/oauth";
 import { readSessionIdFromRequest } from "@/lib/auth/lucia";
-import { getEnv } from "@/lib/cloudflare/route-context";
 import { getDB } from "@/lib/db/client";
 import { createUser, getUserByEmail } from "@/lib/db/queries";
 
@@ -137,7 +137,7 @@ export async function GET(
   request: Request,
   context: { params: Promise<Params> },
 ): Promise<Response> {
-  const env = getEnv(context);
+  const { env } = getRequestContext();
   const { provider: providerParam } = await context.params;
   const provider = asProvider(providerParam);
 

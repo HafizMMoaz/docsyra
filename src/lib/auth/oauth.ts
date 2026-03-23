@@ -6,15 +6,16 @@ const OAUTH_STATE_COOKIE_PREFIX = "oauth_state_";
 const OAUTH_VERIFIER_COOKIE_PREFIX = "oauth_verifier_";
 
 type OAuthEnv = {
-  GOOGLE_CLIENT_ID?: string;
-  GOOGLE_CLIENT_SECRET?: string;
-  GITHUB_CLIENT_ID?: string;
-  GITHUB_CLIENT_SECRET?: string;
+  GOOGLE_CLIENT_ID?: unknown;
+  GOOGLE_CLIENT_SECRET?: unknown;
+  GITHUB_CLIENT_ID?: unknown;
+  GITHUB_CLIENT_SECRET?: unknown;
 };
 
-function requireEnv(env: OAuthEnv, key: keyof OAuthEnv): string {
-  const value = env[key];
-  if (!value) {
+function requireEnv(env: unknown, key: keyof OAuthEnv): string {
+  const source = (env ?? {}) as OAuthEnv;
+  const value = source[key];
+  if (typeof value !== "string" || !value) {
     throw new Error(`Missing OAuth env var: ${key}`);
   }
   return value;
@@ -45,7 +46,7 @@ function readCookie(request: Request, name: string): string | null {
   return null;
 }
 
-export function createGoogleOAuth(env: OAuthEnv, origin: string): Google {
+export function createGoogleOAuth(env: unknown, origin: string): Google {
   return new Google(
     requireEnv(env, "GOOGLE_CLIENT_ID"),
     requireEnv(env, "GOOGLE_CLIENT_SECRET"),
@@ -53,7 +54,7 @@ export function createGoogleOAuth(env: OAuthEnv, origin: string): Google {
   );
 }
 
-export function createGitHubOAuth(env: OAuthEnv, origin: string): GitHub {
+export function createGitHubOAuth(env: unknown, origin: string): GitHub {
   return new GitHub(
     requireEnv(env, "GITHUB_CLIENT_ID"),
     requireEnv(env, "GITHUB_CLIENT_SECRET"),
