@@ -13,6 +13,7 @@ import {
 type DatabaseUserAttributes = {
   email: string | null;
   name: string | null;
+  avatar_url: string | null;
 };
 
 type DocsyraAuth = Lucia<Record<never, never>, DatabaseUserAttributes>;
@@ -75,6 +76,7 @@ export function createLucia(env?: DbEnv): DocsyraAuth {
     getUserAttributes: (attributes) => ({
       email: attributes.email,
       name: attributes.name,
+      avatar_url: attributes.avatar_url,
     }),
   });
 }
@@ -98,6 +100,7 @@ declare module "lucia" {
     DatabaseUserAttributes: {
       email: string | null;
       name: string | null;
+      avatar_url: string | null;
     };
     DatabaseSessionAttributes: Record<never, never>;
   }

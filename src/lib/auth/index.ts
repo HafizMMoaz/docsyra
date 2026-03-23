@@ -13,7 +13,7 @@ export async function createSession(userId: string, env?: DbEnv): Promise<Create
   let userRecord = await getUserById(userId, env);
 
   if (!userRecord) {
-    userRecord = await createUser(userId, null, env);
+    userRecord = await createUser(userId, null, null, null, env);
   }
 
   const session = await auth.createSession(userId, {});
@@ -24,6 +24,7 @@ export async function createSession(userId: string, env?: DbEnv): Promise<Create
       id: userRecord.id,
       email: userRecord.attributes.email,
       name: userRecord.attributes.name,
+      avatar_url: userRecord.attributes.avatar_url,
     },
     session: {
       id: session.id,
@@ -63,6 +64,7 @@ export async function validateSession(request: Request, env?: DbEnv): Promise<Se
       id: result.user.id,
       email: result.user.email,
       name: result.user.name,
+      avatar_url: result.user.avatar_url,
     },
     session: {
       id: result.session.id,

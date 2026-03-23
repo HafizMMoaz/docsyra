@@ -29,7 +29,7 @@ export async function POST(
 
     let user = await getUserByEmail(emailValue, env);
     if (!user) {
-      user = await createUser(crypto.randomUUID(), emailValue, env);
+      user = await createUser(crypto.randomUUID(), emailValue, null, null, env);
     }
 
     const session = await lucia.createSession(user.id, {});
@@ -43,6 +43,7 @@ export async function POST(
           id: user.id,
           email: user.attributes.email,
           name: user.attributes.name,
+          avatar_url: user.attributes.avatar_url,
         },
       },
       { status: 200, headers },

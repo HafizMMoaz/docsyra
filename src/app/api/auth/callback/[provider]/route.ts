@@ -10,12 +10,13 @@ import {
 } from "@/lib/auth/oauth";
 import { readSessionIdFromRequest } from "@/lib/auth/lucia";
 import { getDB } from "@/lib/db/client";
-import { createUser, getUserByEmail } from "@/lib/db/queries";
+import { createUser, getUserByEmail, getUserById, updateUserProfile } from "@/lib/db/queries";
 
 type ProviderUser = {
   id: string;
   email: string | null;
   name: string | null;
+  avatar_url: string | null;
 };
 
 type IdentityRow = {
@@ -46,7 +47,7 @@ async function fetchGoogleUser(accessToken: string): Promise<ProviderUser> {
     throw new Error("Failed to fetch Google user");
   }
 
-  const data = (await response.json()) as { sub?: string; email?: string; name?: string };
+  const data = (await response.json()) as { sub?: string; email?: string; name?: string; picture?: string };
 
   if (!data.sub) {
     throw new Error("Missing Google user id");
@@ -56,6 +57,7 @@ async function fetchGoogleUser(accessToken: string): Promise<ProviderUser> {
     id: data.sub,
     email: data.email ?? null,
     name: data.name ?? null,
+    avatar_url: data.picture ?? null,
   };
 }
 
@@ -72,7 +74,12 @@ async function fetchGitHubUser(accessToken: string): Promise<ProviderUser> {
     throw new Error("Failed to fetch GitHub user");
   }
 
-  const userData = (await userResponse.json()) as { id?: number; name?: string; email?: string | null };
+  const userData = (await userResponse.json()) as {
+    id?: number;
+    name?: string;
+    email?: string | null;
+    avatar_url?: string;
+  };
 
   if (!userData.id) {
     throw new Error("Missing GitHub user id");
@@ -100,7 +107,31 @@ async function fetchGitHubUser(accessToken: string): Promise<ProviderUser> {
     id: String(userData.id),
     email,
     name: userData.name ?? null,
+    avatar_url: userData.avatar_url ?? null,
   };
+}
+
+function isBlank(value: string | null | undefined): boolean {
+  return !value || value.trim().length === 0;
+}
+
+async function fillEmptyUserProfile(userId: string, providerUser: ProviderUser, env: any): Promise<void> {
+  const existingUser = await getUserById(userId, env);
+  if (!existingUser) {
+    return;
+  }
+
+  const updates: { name?: string | null; avatar_url?: string | null } = {};
+
+  if (isBlank(existingUser.attributes.name) && !isBlank(providerUser.name)) {
+    updates.name = providerUser.name;
+  }
+
+  if (isBlank(existingUser.attributes.avatar_url) && !isBlank(providerUser.avatar_url)) {
+    updates.avatar_url = providerUser.avatar_url;
+  }
+
+  await updateUserProfile(userId, updates, env);
 }
 
 async function getIdentityUserId(
@@ -123,13 +154,17 @@ async function linkIdentity(
   providerUserId: string,
   userId: string,
   email: string | null,
+  name: string | null,
+  avatar_url: string | null,
   env: any,
 ): Promise<void> {
   const db = getDB(env);
 
   await db
-    .prepare("INSERT INTO auth_identities (id, user_id, provider, provider_user_id, email) VALUES (?, ?, ?, ?, ?)")
-    .bind(crypto.randomUUID(), userId, provider, providerUserId, email)
+    .prepare(
+      "INSERT INTO auth_identities (id, user_id, provider, provider_user_id, email, name, avatar_url) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    )
+    .bind(crypto.randomUUID(), userId, provider, providerUserId, email, name, avatar_url)
     .run();
 }
 
@@ -191,7 +226,7 @@ export async function GET(
       }
 
       if (!existingIdentityUserId) {
-        await linkIdentity(provider, providerUser.id, userId, providerUser.email, env);
+        await linkIdentity(provider, providerUser.id, userId, providerUser.email, providerUser.name, providerUser.avatar_url, env);
       }
     } else {
       if (existingIdentityUserId) {
@@ -202,13 +237,21 @@ export async function GET(
         if (existingUserByEmail) {
           userId = existingUserByEmail.id;
         } else {
-          const createdUser = await createUser(crypto.randomUUID(), providerUser.email, env);
+          const createdUser = await createUser(
+            crypto.randomUUID(),
+            providerUser.email,
+            providerUser.name,
+            providerUser.avatar_url,
+            env,
+          );
           userId = createdUser.id;
         }
 
-        await linkIdentity(provider, providerUser.id, userId, providerUser.email, env);
+        await linkIdentity(provider, providerUser.id, userId, providerUser.email, providerUser.name, providerUser.avatar_url, env);
       }
     }
+
+    await fillEmptyUserProfile(userId, providerUser, env);
 
     const session = await lucia.createSession(userId, {});
 

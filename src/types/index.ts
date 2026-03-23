@@ -4,6 +4,7 @@ export type User = {
 	id: string;
 	email: string | null;
 	name: string | null;
+	avatar_url: string | null;
 };
 
 export type Session = {

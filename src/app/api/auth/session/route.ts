@@ -34,6 +34,7 @@ export async function GET(
         id: result.user.id,
         email: result.user.email,
         name: result.user.name,
+        avatar_url: result.user.avatar_url,
       },
     },
     { status: 200, headers },
