@@ -1,0 +1,11 @@
+name = "docsyra-collab"
+main = "src/index.ts"
+compatibility_date = "2025-07-05"
+
+[[durable_objects.bindings]]
+name = "COLLAB_ROOM"
+class_name = "DocumentRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["DocumentRoom"]

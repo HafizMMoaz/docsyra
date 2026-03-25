@@ -19,6 +19,22 @@ type DraftDocument = {
 
 type SavingStatus = "idle" | "saving" | "saved";
 
+function resolveCollabWebSocketUrl(id: string): string {
+  const configuredBase = process.env.NEXT_PUBLIC_COLLAB_WS_BASE_URL?.trim();
+
+  if (configuredBase) {
+    const normalized = configuredBase
+      .replace(/^https:/i, "wss:")
+      .replace(/^http:/i, "ws:")
+      .replace(/\/+$/, "");
+
+    return `${normalized}?id=${encodeURIComponent(id)}`;
+  }
+
+  const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${wsProtocol}//${window.location.host}/api/collab/${encodeURIComponent(id)}`;
+}
+
 function toUint8Array(data: unknown): Uint8Array | null {
   if (data instanceof ArrayBuffer) {
     return new Uint8Array(data);
@@ -155,8 +171,7 @@ export default function EditorPage() {
     yDocRef.current = doc;
     yTextRef.current = yText;
 
-    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${wsProtocol}//${window.location.host}/api/collab/${id}`;
+    const wsUrl = resolveCollabWebSocketUrl(id);
     const ws = new WebSocket(wsUrl);
     ws.binaryType = "arraybuffer";
     wsRef.current = ws;

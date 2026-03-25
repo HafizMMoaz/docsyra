@@ -13,24 +13,9 @@
 	"observability": {
 		"enabled": true
 	},
-	"durable_objects": {
-		"bindings": [
-			{
-				"name": "COLLAB_ROOM",
-				"class_name": "DocumentRoom"
-			}
-		]
-	},
-	"migrations": [
-		{
-			"tag": "v1",
-			"new_sqlite_classes": [
-				"DocumentRoom"
-			]
-		}
-	],
 	"vars": {
 		"ENV_NAME": "local",
+		"NEXT_PUBLIC_COLLAB_WS_BASE_URL": "wss://docsyra-collab.YOUR_SUBDOMAIN.workers.dev",
 		"GOOGLE_CLIENT_ID": "20679416807-1261uspg6gmve8tt9m21eqd18dcghol2.apps.googleusercontent.com",
 		"GOOGLE_CLIENT_SECRET": "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",
 		"GITHUB_CLIENT_ID": "Ov23liUJ1IQ3Wh21gGnu",
@@ -39,14 +24,6 @@
 	"env": {
 		"production": {
 			"name": "docsyra-production",
-			"durable_objects": {
-				"bindings": [
-					{
-						"name": "COLLAB_ROOM",
-						"class_name": "DocumentRoom"
-					}
-				]
-			},
 			"d1_databases": [
 				{
 					"binding": "DB",
@@ -56,6 +33,7 @@
 			],
 			"vars": {
 				"ENV_NAME": "production",
+				"NEXT_PUBLIC_COLLAB_WS_BASE_URL": "wss://docsyra-collab.YOUR_SUBDOMAIN.workers.dev",
 				"GOOGLE_CLIENT_ID": "20679416807-1261uspg6gmve8tt9m21eqd18dcghol2.apps.googleusercontent.com",
 				"GOOGLE_CLIENT_SECRET": "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",
 				"GITHUB_CLIENT_ID": "Ov23liUlceVJbHP788uO",
@@ -64,14 +42,6 @@
 		},
 		"preview": {
 			"name": "docsyra-preview",
-			"durable_objects": {
-				"bindings": [
-					{
-						"name": "COLLAB_ROOM",
-						"class_name": "DocumentRoom"
-					}
-				]
-			},
 			"d1_databases": [
 				{
 					"binding": "DB",
@@ -81,6 +51,7 @@
 			],
 			"vars": {
 				"ENV_NAME": "preview",
+				"NEXT_PUBLIC_COLLAB_WS_BASE_URL": "wss://docsyra-collab.YOUR_SUBDOMAIN.workers.dev",
 				"GOOGLE_CLIENT_ID": "20679416807-1261uspg6gmve8tt9m21eqd18dcghol2.apps.googleusercontent.com",
 				"GOOGLE_CLIENT_SECRET": "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",
 				"GITHUB_CLIENT_ID": "Ov23liUlceVJbHP788uO",
