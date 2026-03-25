@@ -14,6 +14,10 @@ type DatabaseUserAttributes = {
   email: string | null;
   name: string | null;
   avatar_url: string | null;
+  status: string | null;
+  profession: string | null;
+  industry: string | null;
+  country: string | null;
 };
 
 type DocsyraAuth = Lucia<Record<never, never>, DatabaseUserAttributes>;
@@ -77,6 +81,10 @@ export function createLucia(env?: DbEnv): DocsyraAuth {
       email: attributes.email,
       name: attributes.name,
       avatar_url: attributes.avatar_url,
+      status: attributes.status,
+      profession: attributes.profession,
+      industry: attributes.industry,
+      country: attributes.country,
     }),
   });
 }
@@ -101,6 +109,10 @@ declare module "lucia" {
       email: string | null;
       name: string | null;
       avatar_url: string | null;
+      status: string | null;
+      profession: string | null;
+      industry: string | null;
+      country: string | null;
     };
     DatabaseSessionAttributes: Record<never, never>;
   }

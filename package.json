@@ -21,7 +21,9 @@
 		"oslo": "^1.2.1",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
-		"react-icons": "^5.5.0"
+		"react-icons": "^5.5.0",
+		"y-websocket": "^3.0.0",
+		"yjs": "^13.6.30"
 	},
 	"devDependencies": {
 		"@cloudflare/next-on-pages": "1.13.16",

@@ -115,6 +115,14 @@ function isBlank(value: string | null | undefined): boolean {
   return !value || value.trim().length === 0;
 }
 
+function sameEmail(a: string | null, b: string | null): boolean {
+  if (!a || !b) {
+    return false;
+  }
+
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
 async function fillEmptyUserProfile(userId: string, providerUser: ProviderUser, env: any): Promise<void> {
   const existingUser = await getUserById(userId, env);
   if (!existingUser) {
@@ -219,10 +227,24 @@ export async function GET(
       userId = currentSession.user.id;
 
       if (existingIdentityUserId && existingIdentityUserId !== userId) {
-        return Response.json(
-          { success: false, error: "This OAuth account is already linked to another user" },
-          { status: 409 },
-        );
+        const existingIdentityUser = await getUserById(existingIdentityUserId, env);
+        const currentUser = await getUserById(userId, env);
+
+        const canReconcileByEmail =
+          !!existingIdentityUser &&
+          !!currentUser &&
+          (sameEmail(existingIdentityUser.attributes.email, currentUser.attributes.email) ||
+            sameEmail(existingIdentityUser.attributes.email, providerUser.email) ||
+            sameEmail(currentUser.attributes.email, providerUser.email));
+
+        if (canReconcileByEmail) {
+          userId = existingIdentityUserId;
+        } else {
+          return Response.json(
+            { success: false, error: "This OAuth account is already linked to another user" },
+            { status: 409 },
+          );
+        }
       }
 
       if (!existingIdentityUserId) {
@@ -242,6 +264,10 @@ export async function GET(
             providerUser.email,
             providerUser.name,
             providerUser.avatar_url,
+            "incomplete",
+            null,
+            null,
+            null,
             env,
           );
           userId = createdUser.id;

@@ -13,7 +13,7 @@ export async function createSession(userId: string, env?: DbEnv): Promise<Create
   let userRecord = await getUserById(userId, env);
 
   if (!userRecord) {
-    userRecord = await createUser(userId, null, null, null, env);
+    userRecord = await createUser(userId, null, null, null, "incomplete", null, null, null, env);
   }
 
   const session = await auth.createSession(userId, {});
@@ -25,6 +25,10 @@ export async function createSession(userId: string, env?: DbEnv): Promise<Create
       email: userRecord.attributes.email,
       name: userRecord.attributes.name,
       avatar_url: userRecord.attributes.avatar_url,
+      status: userRecord.attributes.status as "incomplete" | "active" | "inactive" | null,
+      profession: userRecord.attributes.profession,
+      industry: userRecord.attributes.industry,
+      country: userRecord.attributes.country,
     },
     session: {
       id: session.id,
@@ -65,6 +69,10 @@ export async function validateSession(request: Request, env?: DbEnv): Promise<Se
       email: result.user.email,
       name: result.user.name,
       avatar_url: result.user.avatar_url,
+      status: result.user.status as "incomplete" | "active" | "inactive" | null,
+      profession: result.user.profession,
+      industry: result.user.industry,
+      country: result.user.country,
     },
     session: {
       id: result.session.id,

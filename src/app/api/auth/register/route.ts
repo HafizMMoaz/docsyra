@@ -1,11 +1,11 @@
-import { createLucia, setSessionCookie } from "@/lib/auth";
-import { verifyPassword } from "@/lib/auth/password";
+import { createUser, createLucia, setSessionCookie } from "@/lib/auth";
+import { hashPassword } from "@/lib/auth/password";
 import { getEnv } from "@/lib/cloudflare/route-context";
-import { getUserByEmail, getUserPasswordHashByEmail } from "@/lib/db/queries";
+import { getUserPasswordHashByEmail } from "@/lib/db/queries";
 
 export const runtime = "edge";
 
-type LoginBody = {
+type Body = {
   email?: unknown;
   password?: unknown;
 };
@@ -18,10 +18,10 @@ export async function POST(
   request: Request,
   context: { params: Promise<Record<string, string | string[] | undefined>> },
 ): Promise<Response> {
-  let body: LoginBody;
+  let body: Body;
 
   try {
-    body = (await request.json()) as LoginBody;
+    body = (await request.json()) as Body;
   } catch {
     return Response.json({ success: false, error: "Invalid request body" }, { status: 400 });
   }
@@ -35,37 +35,34 @@ export async function POST(
     }
 
     if (passwordValue.length < 8) {
-      return Response.json(
-        { success: false, error: "Password must be at least 8 characters" },
-        { status: 400 },
-      );
+      return Response.json({ success: false, error: "Password must be at least 8 characters" }, { status: 400 });
     }
 
     const env = getEnv(context);
-    const lucia = createLucia(env);
+    const existing = await getUserPasswordHashByEmail(emailValue, env);
 
-    const user = await getUserByEmail(emailValue, env);
-    if (!user) {
-      return Response.json({ success: false, error: "Account not found. Continue with email to create one." }, { status: 404 });
-    }
-
-    const credentials = await getUserPasswordHashByEmail(emailValue, env);
-
-    if (!credentials?.password_hash) {
+    if (existing) {
       return Response.json(
-        {
-          success: false,
-          error: "This account uses social login. Continue with Google/GitHub.",
-        },
-        { status: 403 },
+        { success: false, error: "Account already exists. Continue with email and enter password." },
+        { status: 409 },
       );
     }
 
-    const validPassword = await verifyPassword(passwordValue, credentials.password_hash);
-    if (!validPassword) {
-      return Response.json({ success: false, error: "Invalid email or password" }, { status: 401 });
-    }
+    const passwordHash = await hashPassword(passwordValue);
+    const user = await createUser(
+      crypto.randomUUID(),
+      emailValue,
+      null,
+      null,
+      "incomplete",
+      null,
+      null,
+      null,
+      env,
+      passwordHash,
+    );
 
+    const lucia = createLucia(env);
     const session = await lucia.createSession(user.id, {});
     const headers = new Headers();
     setSessionCookie(headers, session.id, env);
@@ -76,15 +73,10 @@ export async function POST(
         user: {
           id: user.id,
           email: user.attributes.email,
-          name: user.attributes.name,
-          avatar_url: user.attributes.avatar_url,
           status: user.attributes.status,
-          profession: user.attributes.profession,
-          industry: user.attributes.industry,
-          country: user.attributes.country,
         },
       },
-      { status: 200, headers },
+      { status: 201, headers },
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error";

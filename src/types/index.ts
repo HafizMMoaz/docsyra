@@ -5,6 +5,10 @@ export type User = {
 	email: string | null;
 	name: string | null;
 	avatar_url: string | null;
+	status: "incomplete" | "active" | "inactive" | null;
+	profession: string | null;
+	industry: string | null;
+	country: string | null;
 };
 
 export type Session = {

@@ -2,100 +2,143 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getSession } from "@/lib/auth/session-client";
-import type { User } from "@/types";
+
+type DocumentSummary = {
+  id: string;
+  title: string | null;
+  updated_at: number;
+};
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [loadingSession, setLoadingSession] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
-  const [loggingOut, setLoggingOut] = useState(false);
+  const [documents, setDocuments] = useState<DocumentSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
 
-    async function loadSession() {
-      const user = await getSession();
+    async function loadDocuments() {
+      try {
+        const response = await fetch("/api/docs/list", {
+          method: "GET",
+          cache: "no-store",
+        });
 
-      if (!mounted) {
-        return;
+        if (!response.ok) {
+          if (!mounted) {
+            return;
+          }
+
+          setError("Failed to load documents");
+          setLoading(false);
+          return;
+        }
+
+        const data = (await response.json()) as {
+          success?: boolean;
+          documents?: DocumentSummary[];
+        };
+
+        if (!mounted) {
+          return;
+        }
+
+        setDocuments(Array.isArray(data.documents) ? data.documents : []);
+      } catch {
+        if (mounted) {
+          setError("Failed to load documents");
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
-
-      if (!user) {
-        router.replace("/login");
-        return;
-      }
-
-      setUser(user);
-      setLoadingSession(false);
     }
 
-    void loadSession();
+    void loadDocuments();
 
     return () => {
       mounted = false;
     };
-  }, [router]);
+  }, []);
 
-  async function handleLogout() {
-    setLoggingOut(true);
+  async function handleCreateDocument() {
+    setCreating(true);
+    setError(null);
 
     try {
-      await fetch("/api/auth/logout", {
+      const response = await fetch("/api/docs/create", {
         method: "POST",
       });
+
+      const data = (await response.json()) as { success?: boolean; id?: string; error?: string };
+
+      if (!response.ok || !data.success || !data.id) {
+        setError(data.error ?? "Failed to create document");
+        return;
+      }
+
+      router.push(`/editor/${data.id}`);
+    } catch {
+      setError("Failed to create document");
     } finally {
-      router.replace("/login");
-      router.refresh();
-      setLoggingOut(false);
+      setCreating(false);
     }
   }
 
-  if (loadingSession) {
-    return <p className="text-sm text-slate-500">Checking session...</p>;
+  function formatTimestamp(value: number): string {
+    return new Date(value).toLocaleString();
   }
 
   return (
     <section>
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Your Documents</h1>
-        <div className="flex items-center gap-2">
-          <div className="mr-2 flex items-center gap-2">
-            {user?.avatar_url ? (
-              <img
-                src={user.avatar_url}
-                alt={user.name ? `${user.name} avatar` : "User avatar"}
-                className="h-9 w-9 rounded-full border border-slate-200 object-cover"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <div className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-xs font-semibold text-slate-700">
-                {user?.name?.trim()?.charAt(0).toUpperCase() ?? "U"}
-              </div>
-            )}
-            <p className="hidden text-sm font-medium text-slate-700 sm:block">{user?.name || user?.email || "User"}</p>
-          </div>
-          <button
-            type="button"
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
-          >
-            New Document
-          </button>
-          <button
-            type="button"
-            onClick={handleLogout}
-            disabled={loggingOut}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
-          >
-            {loggingOut ? "Logging out..." : "Logout"}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleCreateDocument}
+          disabled={creating}
+          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+        >
+          {creating ? "Creating..." : "New Document"}
+        </button>
       </div>
 
-      <div className="mt-8 rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
-        <p className="text-sm font-medium text-slate-700">No documents yet</p>
-        <p className="mt-1 text-sm text-slate-500">Create a new document to start writing.</p>
-      </div>
+      {error ? <p className="mt-4 text-sm text-red-600">{error}</p> : null}
+
+      {loading ? (
+        <div className="mt-8 rounded-xl border border-slate-200 bg-white p-10 text-center">
+          <p className="text-sm text-slate-500">Loading documents...</p>
+        </div>
+      ) : null}
+
+      {!loading && documents.length > 0 ? (
+        <div className="mt-8 overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <ul className="divide-y divide-slate-200">
+            {documents.map((document) => (
+              <li key={document.id}>
+                <button
+                  type="button"
+                  onClick={() => router.push(`/editor/${document.id}`)}
+                  className="w-full px-4 py-3 text-left transition hover:bg-slate-50"
+                >
+                  <p className="text-sm font-medium text-slate-900">{document.title || "Untitled"}</p>
+                  <p className="mt-1 text-xs text-slate-500">Last updated: {formatTimestamp(document.updated_at)}</p>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {!loading && documents.length === 0 ? (
+        <div className="mt-8 rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
+          <p className="text-sm font-medium text-slate-700">No documents yet</p>
+          <p className="mt-1 text-sm text-slate-500">Create a new document to start writing.</p>
+        </div>
+      ) : null}
     </section>
   );
 }

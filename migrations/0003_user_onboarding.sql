@@ -1,0 +1,4 @@
+ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'incomplete';
+ALTER TABLE users ADD COLUMN profession TEXT;
+ALTER TABLE users ADD COLUMN industry TEXT;
+ALTER TABLE users ADD COLUMN country TEXT;
