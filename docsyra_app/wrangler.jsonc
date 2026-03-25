@@ -15,7 +15,7 @@
 	},
 	"vars": {
 		"ENV_NAME": "local",
-		"NEXT_PUBLIC_COLLAB_WS_BASE_URL": "wss://docsyra-collab.YOUR_SUBDOMAIN.workers.dev",
+		"NEXT_PUBLIC_COLLAB_WS_BASE_URL": "wss://docsyra-collab.hafizmmoaz.workers.dev",
 		"GOOGLE_CLIENT_ID": "20679416807-1261uspg6gmve8tt9m21eqd18dcghol2.apps.googleusercontent.com",
 		"GOOGLE_CLIENT_SECRET": "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",
 		"GITHUB_CLIENT_ID": "Ov23liUJ1IQ3Wh21gGnu",
@@ -33,7 +33,7 @@
 			],
 			"vars": {
 				"ENV_NAME": "production",
-				"NEXT_PUBLIC_COLLAB_WS_BASE_URL": "wss://docsyra-collab.YOUR_SUBDOMAIN.workers.dev",
+				"NEXT_PUBLIC_COLLAB_WS_BASE_URL": "wss://docsyra-collab.hafizmmoaz.workers.dev",
 				"GOOGLE_CLIENT_ID": "20679416807-1261uspg6gmve8tt9m21eqd18dcghol2.apps.googleusercontent.com",
 				"GOOGLE_CLIENT_SECRET": "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",
 				"GITHUB_CLIENT_ID": "Ov23liUlceVJbHP788uO",
@@ -51,7 +51,7 @@
 			],
 			"vars": {
 				"ENV_NAME": "preview",
-				"NEXT_PUBLIC_COLLAB_WS_BASE_URL": "wss://docsyra-collab.YOUR_SUBDOMAIN.workers.dev",
+				"NEXT_PUBLIC_COLLAB_WS_BASE_URL": "wss://docsyra-collab.hafizmmoaz.workers.dev",
 				"GOOGLE_CLIENT_ID": "20679416807-1261uspg6gmve8tt9m21eqd18dcghol2.apps.googleusercontent.com",
 				"GOOGLE_CLIENT_SECRET": "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",
 				"GITHUB_CLIENT_ID": "Ov23liUlceVJbHP788uO",
