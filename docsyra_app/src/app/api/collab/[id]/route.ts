@@ -15,7 +15,7 @@ export async function GET(
     return new Response("Expected websocket", { status: 426 });
   }
 
-  const { env } = getRequestContext() as { env: { COLLAB_ROOM: DurableObjectNamespace } };
+  const { env } = getRequestContext() as unknown as { env: { COLLAB_ROOM: DurableObjectNamespace } };
   const { id } = await context.params;
 
   const roomId = env.COLLAB_ROOM.idFromName(id);
