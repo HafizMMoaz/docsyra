@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { getSession } from "@/lib/auth/session-client";
+import { parseCreationOptionsFromJSON, type CreationOptionsJSON } from "@/lib/auth/passkey-client";
 import type { User } from "@/types";
 import { COUNTRY_OPTIONS, INDUSTRY_OPTIONS, PROFESSION_OPTIONS } from "@/lib/profile-options";
 
@@ -27,6 +28,16 @@ type SocialAccount = {
   avatar_url: string | null;
 };
 
+type PasskeyItem = {
+  id: string;
+  credentialIdSuffix: string;
+  createdAt: number;
+};
+
+type PublicKeyCredentialWithJSON = PublicKeyCredential & {
+  toJSON?: () => unknown;
+};
+
 export default function SettingsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -34,6 +45,14 @@ export default function SettingsPage() {
   const [deactivating, setDeactivating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [settingUpTwoFactor, setSettingUpTwoFactor] = useState(false);
+  const [verifyingTwoFactor, setVerifyingTwoFactor] = useState(false);
+  const [disablingTwoFactor, setDisablingTwoFactor] = useState(false);
+  const [twoFactorSecret, setTwoFactorSecret] = useState<string | null>(null);
+  const [twoFactorQrCodeUrl, setTwoFactorQrCodeUrl] = useState<string | null>(null);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -45,6 +64,9 @@ export default function SettingsPage() {
     google: false,
     github: false,
   });
+  const [passkeys, setPasskeys] = useState<PasskeyItem[]>([]);
+  const [creatingPasskey, setCreatingPasskey] = useState(false);
+  const [removingPasskeyId, setRemovingPasskeyId] = useState<string | null>(null);
 
   const [name, setName] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -109,6 +131,26 @@ export default function SettingsPage() {
         if (Array.isArray(identitiesData.accounts)) {
           setSocialAccounts(identitiesData.accounts);
         }
+      }
+
+      const twoFactorResponse = await fetch("/api/auth/2fa/setup", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      if (twoFactorResponse.ok) {
+        const twoFactorData = (await twoFactorResponse.json()) as { twoFactorEnabled?: boolean };
+        setTwoFactorEnabled(Boolean(twoFactorData.twoFactorEnabled));
+      }
+
+      const passkeyResponse = await fetch("/api/auth/passkey/list", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      if (passkeyResponse.ok) {
+        const passkeyData = (await passkeyResponse.json()) as { passkeys?: PasskeyItem[] };
+        setPasskeys(Array.isArray(passkeyData.passkeys) ? passkeyData.passkeys : []);
       }
 
       setLoading(false);
@@ -268,6 +310,122 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleStartTwoFactorSetup() {
+    setSettingUpTwoFactor(true);
+    setError(null);
+    setSuccess(null);
+    setBackupCodes([]);
+
+    try {
+      const response = await fetch("/api/auth/2fa/setup", {
+        method: "POST",
+      });
+
+      const data = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+        secret?: string;
+        qrCodeUrl?: string;
+      };
+
+      if (!response.ok || !data.success || !data.secret || !data.qrCodeUrl) {
+        setError(data.error ?? "Failed to start 2FA setup");
+        return;
+      }
+
+      setTwoFactorSecret(data.secret);
+      setTwoFactorQrCodeUrl(data.qrCodeUrl);
+      setSuccess("Scan the QR code and enter your authenticator code to confirm.");
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setSettingUpTwoFactor(false);
+    }
+  }
+
+  async function handleVerifyTwoFactorSetup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!/^\d{6}$/.test(twoFactorCode.trim())) {
+      setError("Enter a valid 6-digit authenticator code");
+      return;
+    }
+
+    setVerifyingTwoFactor(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await fetch("/api/auth/2fa/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code: twoFactorCode.trim() }),
+      });
+
+      const data = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+        backupCodes?: string[];
+      };
+
+      if (!response.ok || !data.success) {
+        setError(data.error ?? "Failed to verify 2FA setup");
+        return;
+      }
+
+      setTwoFactorEnabled(true);
+      setBackupCodes(Array.isArray(data.backupCodes) ? data.backupCodes : []);
+      setTwoFactorSecret(null);
+      setTwoFactorQrCodeUrl(null);
+      setTwoFactorCode("");
+      setSuccess("2FA enabled. Save your backup codes now.");
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setVerifyingTwoFactor(false);
+    }
+  }
+
+  async function handleDisableTwoFactor() {
+    if (!/^\d{6}$/.test(twoFactorCode.trim())) {
+      setError("Enter a valid 6-digit authenticator code to disable 2FA");
+      return;
+    }
+
+    setDisablingTwoFactor(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await fetch("/api/auth/2fa/disable", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code: twoFactorCode.trim() }),
+      });
+
+      const data = (await response.json()) as { success?: boolean; error?: string };
+      if (!response.ok || !data.success) {
+        setError(data.error ?? "Failed to disable 2FA");
+        return;
+      }
+
+      setTwoFactorEnabled(false);
+      setTwoFactorSecret(null);
+      setTwoFactorQrCodeUrl(null);
+      setBackupCodes([]);
+      setTwoFactorCode("");
+      setSuccess("2FA disabled");
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setDisablingTwoFactor(false);
+    }
+  }
+
   function handleConnect(provider: Provider) {
     window.location.href = `/api/auth/${provider}`;
   }
@@ -313,6 +471,107 @@ export default function SettingsPage() {
 
   function getProviderInitial(provider: Provider): string {
     return provider === "google" ? "G" : "GH";
+  }
+
+  async function refreshPasskeys() {
+    const response = await fetch("/api/auth/passkey/list", {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      return;
+    }
+
+    const data = (await response.json()) as { passkeys?: PasskeyItem[] };
+    setPasskeys(Array.isArray(data.passkeys) ? data.passkeys : []);
+  }
+
+  async function handleAddPasskey() {
+    if (typeof window === "undefined" || !window.PublicKeyCredential || !navigator.credentials) {
+      setError("Passkeys are not supported in this browser");
+      return;
+    }
+
+    setCreatingPasskey(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const optionsResponse = await fetch("/api/auth/passkey/register", {
+        method: "POST",
+      });
+
+      const optionsData = (await optionsResponse.json()) as {
+        success?: boolean;
+        error?: string;
+        options?: CreationOptionsJSON;
+      };
+
+      if (!optionsResponse.ok || !optionsData.success || !optionsData.options) {
+        setError(optionsData.error ?? "Failed to start passkey registration");
+        return;
+      }
+
+      const credential = (await navigator.credentials.create({
+        publicKey: parseCreationOptionsFromJSON(optionsData.options),
+      })) as PublicKeyCredentialWithJSON | null;
+
+      if (!credential || typeof credential.toJSON !== "function") {
+        setError("Passkey creation was cancelled");
+        return;
+      }
+
+      const verifyResponse = await fetch("/api/auth/passkey/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ response: credential.toJSON() }),
+      });
+
+      const verifyData = (await verifyResponse.json()) as { success?: boolean; error?: string };
+      if (!verifyResponse.ok || !verifyData.success) {
+        setError(verifyData.error ?? "Failed to verify passkey");
+        return;
+      }
+
+      await refreshPasskeys();
+      setSuccess("Passkey added");
+    } catch {
+      setError("Unable to add passkey");
+    } finally {
+      setCreatingPasskey(false);
+    }
+  }
+
+  async function handleRemovePasskey(passkeyId: string) {
+    setRemovingPasskeyId(passkeyId);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await fetch("/api/auth/passkey/remove", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ passkeyId }),
+      });
+
+      const data = (await response.json()) as { success?: boolean; error?: string };
+      if (!response.ok || !data.success) {
+        setError(data.error ?? "Failed to remove passkey");
+        return;
+      }
+
+      await refreshPasskeys();
+      setSuccess("Passkey removed");
+    } catch {
+      setError("Unable to remove passkey");
+    } finally {
+      setRemovingPasskeyId(null);
+    }
   }
 
   if (loading) {
@@ -505,6 +764,91 @@ export default function SettingsPage() {
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-6">
+        <h2 className="text-lg font-semibold text-slate-900">Two-Factor Authentication</h2>
+        <p className="mt-1 text-sm text-slate-500">Protect your account with an authenticator app and backup codes.</p>
+
+        <div className="mt-4 space-y-4">
+          {!twoFactorEnabled && !twoFactorSecret ? (
+            <button
+              type="button"
+              onClick={handleStartTwoFactorSetup}
+              disabled={settingUpTwoFactor}
+              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
+            >
+              {settingUpTwoFactor ? "Preparing..." : "Enable 2FA"}
+            </button>
+          ) : null}
+
+          {twoFactorSecret && twoFactorQrCodeUrl ? (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm text-slate-700">Scan this QR code with your authenticator app, then confirm with a 6-digit code.</p>
+              <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+                Save your backup codes after enabling 2FA. You will not be able to see them again.
+              </p>
+              <img src={twoFactorQrCodeUrl} alt="2FA QR code" className="mt-3 h-44 w-44 rounded border border-slate-200 bg-white p-2" />
+              <p className="mt-2 break-all text-xs text-slate-500">Secret: {twoFactorSecret}</p>
+
+              <form className="mt-3 space-y-2" onSubmit={handleVerifyTwoFactorSetup}>
+                <input
+                  type="text"
+                  value={twoFactorCode}
+                  onChange={(event) => setTwoFactorCode(event.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+                  placeholder="Enter 6-digit code"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                  disabled={verifyingTwoFactor}
+                />
+                <button
+                  type="submit"
+                  disabled={verifyingTwoFactor}
+                  className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
+                >
+                  {verifyingTwoFactor ? "Verifying..." : "Confirm & Enable"}
+                </button>
+              </form>
+            </div>
+          ) : null}
+
+          {twoFactorEnabled ? (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+              <p className="text-sm font-medium text-emerald-800">2FA is enabled</p>
+              <p className="mt-1 text-sm text-emerald-700">Enter a current authenticator code to disable 2FA.</p>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <input
+                  type="text"
+                  value={twoFactorCode}
+                  onChange={(event) => setTwoFactorCode(event.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+                  placeholder="6-digit code"
+                  className="w-52 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                  disabled={disablingTwoFactor}
+                />
+                <button
+                  type="button"
+                  onClick={handleDisableTwoFactor}
+                  disabled={disablingTwoFactor}
+                  className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-100 disabled:opacity-60"
+                >
+                  {disablingTwoFactor ? "Disabling..." : "Disable 2FA"}
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {backupCodes.length > 0 ? (
+            <div className="rounded-lg border border-slate-200 bg-white p-4">
+              <p className="text-sm font-medium text-slate-900">Backup codes (shown once)</p>
+              <p className="mt-1 text-xs text-slate-500">Store these in a safe place. You will not be able to view them again. Each code can be used once.</p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {backupCodes.map((code) => (
+                  <code key={code} className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-800">{code}</code>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-6">
         <h2 className="text-lg font-semibold text-slate-900">Connected Accounts</h2>
         <p className="mt-1 text-sm text-slate-500">Connect your social providers</p>
 
@@ -559,6 +903,50 @@ export default function SettingsPage() {
               )}
             </div>
           ))}
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-6">
+        <h2 className="text-lg font-semibold text-slate-900">Passkeys</h2>
+        <p className="mt-1 text-sm text-slate-500">Use passkeys for secure passwordless login.</p>
+
+        <div className="mt-4 space-y-3">
+          <button
+            type="button"
+            onClick={handleAddPasskey}
+            disabled={creatingPasskey}
+            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
+          >
+            {creatingPasskey ? "Adding..." : "Add Passkey"}
+          </button>
+
+          {passkeys.length === 0 ? (
+            <p className="text-sm text-slate-500">No passkeys registered yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {passkeys.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-slate-800">Passkey ending in {entry.credentialIdSuffix}</p>
+                    <p className="text-xs text-slate-500">
+                      Added {new Date(entry.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemovePasskey(entry.id)}
+                    disabled={removingPasskeyId === entry.id}
+                    className="rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition hover:bg-amber-100 disabled:opacity-60"
+                  >
+                    {removingPasskeyId === entry.id ? "Removing..." : "Remove"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

@@ -12,3 +12,4 @@ export function clearSessionCookie(headers: Headers, env?: DbEnv): void {
   const blankCookie = lucia.createBlankSessionCookie();
   headers.append("Set-Cookie", blankCookie.serialize());
 }
+          

@@ -1,7 +1,15 @@
 import { createLucia, setSessionCookie } from "@/lib/auth";
+import { getSessionClientMetadata } from "@/lib/auth/session-metadata";
+import { maybeAlertSuspiciousSession } from "@/lib/auth/session-risk";
 import { verifyPassword } from "@/lib/auth/password";
+import { createTwoFactorChallengeCookie } from "@/lib/auth/two-factor";
 import { getEnv } from "@/lib/cloudflare/route-context";
-import { getUserByEmail, getUserPasswordHashByEmail } from "@/lib/db/queries";
+import {
+  getUserByEmail,
+  getUserPasswordHashByEmail,
+  getUserTwoFactorSettings,
+  updateSessionClientMetadata,
+} from "@/lib/db/queries";
 
 export const runtime = "edge";
 
@@ -66,7 +74,25 @@ export async function POST(
       return Response.json({ success: false, error: "Invalid email or password" }, { status: 401 });
     }
 
+    const twoFactor = await getUserTwoFactorSettings(user.id, env);
+    if (twoFactor?.enabled) {
+      const headers = new Headers();
+      headers.append("Set-Cookie", createTwoFactorChallengeCookie(user.id));
+
+      return Response.json({ success: true, requiresTwoFactor: true }, { status: 200, headers });
+    }
+
     const session = await lucia.createSession(user.id, {});
+    const metadata = getSessionClientMetadata(request);
+    await updateSessionClientMetadata(session.id, metadata, env);
+    await maybeAlertSuspiciousSession({
+      userId: user.id,
+      userEmail: user.attributes.email,
+      sessionId: session.id,
+      metadata,
+      env,
+    });
+
     const headers = new Headers();
     setSessionCookie(headers, session.id, env);
 

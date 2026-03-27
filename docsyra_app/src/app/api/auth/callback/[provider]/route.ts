@@ -1,4 +1,7 @@
 import { clearSessionCookie, createLucia, setSessionCookie } from "@/lib/auth";
+import { maybeAlertSuspiciousSession } from "@/lib/auth/session-risk";
+import { getSessionClientMetadata } from "@/lib/auth/session-metadata";
+import { createTwoFactorChallengeCookie } from "@/lib/auth/two-factor";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 import {
   clearOAuthCookies,
@@ -10,7 +13,14 @@ import {
 } from "@/lib/auth/oauth";
 import { readSessionIdFromRequest } from "@/lib/auth/lucia";
 import { getDB } from "@/lib/db/client";
-import { createUser, getUserByEmail, getUserById, updateUserProfile } from "@/lib/db/queries";
+import {
+  createUser,
+  getUserByEmail,
+  getUserById,
+  getUserTwoFactorSettings,
+  updateSessionClientMetadata,
+  updateUserProfile,
+} from "@/lib/db/queries";
 
 type ProviderUser = {
   id: string;
@@ -279,7 +289,28 @@ export async function GET(
 
     await fillEmptyUserProfile(userId, providerUser, env);
 
+    const twoFactor = await getUserTwoFactorSettings(userId, env);
+    if (!currentSession.user && twoFactor?.enabled) {
+      const headers = new Headers({
+        Location: "/login?twoFactor=1",
+      });
+
+      clearOAuthCookies(headers, provider);
+      headers.append("Set-Cookie", createTwoFactorChallengeCookie(userId));
+
+      return new Response(null, { status: 302, headers });
+    }
+
     const session = await lucia.createSession(userId, {});
+    const metadata = getSessionClientMetadata(request);
+    await updateSessionClientMetadata(session.id, metadata, env);
+    await maybeAlertSuspiciousSession({
+      userId,
+      userEmail: providerUser.email,
+      sessionId: session.id,
+      metadata,
+      env,
+    });
 
     const headers = new Headers({
       Location: "/dashboard",

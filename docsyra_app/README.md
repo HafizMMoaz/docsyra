@@ -2,6 +2,13 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`c3`](https:
 
 ## Getting Started
 
+## Security Environment Variables
+
+- `TWO_FACTOR_SECRET_KEY`: Required for encrypting TOTP secrets at rest before saving to D1. Use a long random value and keep it server-side only.
+- `PASSKEY_RP_ID`: Relying Party ID for WebAuthn (example: `docsyra.app` for production or `localhost` for local dev).
+- `PASSKEY_ORIGIN`: Allowed WebAuthn origin (example: `https://docsyra.app` or `http://localhost:3000`).
+- `PASSKEY_RP_NAME`: Display name shown in authenticator prompts (default: `Docsyra`).
+
 First, run the development server:
 
 ```bash

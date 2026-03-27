@@ -1,7 +1,17 @@
 import { createUser, createLucia, setSessionCookie } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth/password";
+import { getSessionClientMetadata } from "@/lib/auth/session-metadata";
+import { maybeAlertSuspiciousSession } from "@/lib/auth/session-risk";
+import { createExpiry, createSecureToken } from "@/lib/auth/tokens";
 import { getEnv } from "@/lib/cloudflare/route-context";
-import { getUserPasswordHashByEmail } from "@/lib/db/queries";
+import {
+  createEmailVerificationToken,
+  deleteEmailVerificationTokensByUser,
+  getUserPasswordHashByEmail,
+  updateSessionClientMetadata,
+} from "@/lib/db/queries";
+import { sendEmail } from "@/lib/email";
+import { verifyEmailTemplate } from "@/lib/email/templates";
 
 export const runtime = "edge";
 
@@ -62,8 +72,39 @@ export async function POST(
       passwordHash,
     );
 
+    const verifyToken = createSecureToken();
+    const verifyExpiresAt = createExpiry(30);
+    await deleteEmailVerificationTokensByUser(user.id, env);
+    await createEmailVerificationToken(user.id, verifyToken, verifyExpiresAt, env);
+
+    const appBase = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://docsyra.app";
+    const verifyLink = `${appBase.replace(/\/+$/, "")}/api/auth/verify?token=${encodeURIComponent(verifyToken)}`;
+
+    try {
+      await sendEmail(
+        {
+          to: emailValue,
+          subject: "Verify your Docsyra email",
+          html: verifyEmailTemplate(verifyLink),
+        },
+        env,
+      );
+    } catch (error) {
+      console.error("[email][register] Failed to send verification email", error);
+    }
+
     const lucia = createLucia(env);
     const session = await lucia.createSession(user.id, {});
+    const metadata = getSessionClientMetadata(request);
+    await updateSessionClientMetadata(session.id, metadata, env);
+    await maybeAlertSuspiciousSession({
+      userId: user.id,
+      userEmail: user.attributes.email,
+      sessionId: session.id,
+      metadata,
+      env,
+    });
+
     const headers = new Headers();
     setSessionCookie(headers, session.id, env);
 

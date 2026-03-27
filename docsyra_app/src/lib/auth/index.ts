@@ -1,14 +1,16 @@
 import { type DbEnv } from "../db/client";
-import { createUser, getUserById } from "../db/queries";
+import { createUser, getUserById, updateSessionClientMetadata } from "../db/queries";
 import { clearSessionCookie, setSessionCookie } from "./cookies";
 import { createLucia, readSessionIdFromRequest } from "./lucia";
+import { getSessionClientMetadata } from "./session-metadata";
+import { maybeAlertSuspiciousSession } from "./session-risk";
 import type { CreateSessionResult, DestroySessionResult, SessionResult } from "../../types";
 
 export type { CreateSessionResult, DestroySessionResult, Session, SessionResult, User } from "../../types";
 export { createLucia } from "./lucia";
 export { createUser, clearSessionCookie, setSessionCookie };
 
-export async function createSession(userId: string, env?: DbEnv): Promise<CreateSessionResult> {
+export async function createSession(userId: string, env?: DbEnv, request?: Request): Promise<CreateSessionResult> {
   const auth = createLucia(env);
   let userRecord = await getUserById(userId, env);
 
@@ -17,6 +19,19 @@ export async function createSession(userId: string, env?: DbEnv): Promise<Create
   }
 
   const session = await auth.createSession(userId, {});
+
+  if (request) {
+    const metadata = getSessionClientMetadata(request);
+    await updateSessionClientMetadata(session.id, metadata, env);
+    await maybeAlertSuspiciousSession({
+      userId,
+      userEmail: userRecord.attributes.email,
+      sessionId: session.id,
+      metadata,
+      env,
+    });
+  }
+
   const sessionCookie = auth.createSessionCookie(session.id).serialize();
 
   return {
