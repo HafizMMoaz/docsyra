@@ -1,6 +1,9 @@
 import { createPasskeyLoginOptions } from "@/lib/auth/passkeys";
 import { getEnv } from "@/lib/cloudflare/route-context";
-import { getUserByEmail, getPasskeysByUserId } from "@/lib/db/queries";
+import { rejectCsrf } from "@/lib/security/csrf";
+import { rateLimit } from "@/lib/security/rate-limit";
+import { createPasskeyChallenge, getPasskeysByUserId, getUserByEmail } from "@/lib/db/queries";
+import { PASSKEY_CHALLENGE_TTL_MS } from "@/lib/auth/passkeys";
 
 export const runtime = "edge";
 
@@ -16,6 +19,21 @@ export async function POST(
   request: Request,
   context: { params: Promise<Record<string, string | string[] | undefined>> },
 ): Promise<Response> {
+  try {
+    await rateLimit(request, null, {
+      limit: 5,
+      windowMs: 60_000,
+      route: "passkey",
+    });
+  } catch {
+    return Response.json({ success: false, error: "Too many requests. Try again later." }, { status: 429 });
+  }
+
+  const csrfError = await rejectCsrf(request);
+  if (csrfError) {
+    return csrfError;
+  }
+
   let body: Body;
   try {
     body = (await request.json()) as Body;
@@ -40,19 +58,24 @@ export async function POST(
   }
 
   const loginOptions = await createPasskeyLoginOptions({
-    email,
     credentialIds: passkeys.map((entry) => entry.credentialId),
     env,
   });
 
-  const headers = new Headers();
-  headers.append("Set-Cookie", loginOptions.setCookie);
+  await createPasskeyChallenge(
+    {
+      userId: user.id,
+      challenge: loginOptions.options.challenge,
+      expiresAt: Date.now() + PASSKEY_CHALLENGE_TTL_MS,
+    },
+    env,
+  );
 
   return Response.json(
     {
       success: true,
       options: loginOptions.options,
     },
-    { status: 200, headers },
+    { status: 200 },
   );
 }

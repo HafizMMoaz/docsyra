@@ -3,6 +3,7 @@
 export type User = {
 	id: string;
 	email: string | null;
+	email_verified: boolean;
 	name: string | null;
 	avatar_url: string | null;
 	status: "incomplete" | "active" | "inactive" | null;

@@ -3,9 +3,12 @@ import { readSessionIdFromRequest } from "@/lib/auth/lucia";
 import {
   generateBackupCodes,
   hashTwoFactorValue,
+  decryptSecret,
   verifyTotpToken,
 } from "@/lib/auth/two-factor";
 import { getEnv } from "@/lib/cloudflare/route-context";
+import { rejectCsrf } from "@/lib/security/csrf";
+import { rateLimit } from "@/lib/security/rate-limit";
 import {
   getUserTwoFactorSettings,
   replaceBackupCodes,
@@ -22,6 +25,11 @@ export async function POST(
   request: Request,
   context: { params: Promise<Record<string, string | string[] | undefined>> },
 ): Promise<Response> {
+  const csrfError = await rejectCsrf(request);
+  if (csrfError) {
+    return csrfError;
+  }
+
   let body: Body;
   try {
     body = (await request.json()) as Body;
@@ -47,12 +55,23 @@ export async function POST(
     return Response.json({ success: false, error: "Unauthorized" }, { status: 401 });
   }
 
+  try {
+    await rateLimit(request, result.user.id, {
+      limit: 5,
+      windowMs: 60_000,
+      route: "2fa",
+    });
+  } catch {
+    return Response.json({ success: false, error: "Too many requests. Try again later." }, { status: 429 });
+  }
+
   const twoFactor = await getUserTwoFactorSettings(result.user.id, env);
   if (!twoFactor?.secret) {
     return Response.json({ success: false, error: "Setup not initialized" }, { status: 400 });
   }
 
-  const valid = await verifyTotpToken(twoFactor.secret, code);
+  const decrypted = await decryptSecret(twoFactor.secret);
+  const valid = await verifyTotpToken(decrypted, code);
   if (!valid) {
     return Response.json({ success: false, error: "Invalid code" }, { status: 400 });
   }

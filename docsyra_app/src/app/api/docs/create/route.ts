@@ -1,6 +1,7 @@
 import { createLucia } from "@/lib/auth";
 import { readSessionIdFromRequest } from "@/lib/auth/lucia";
 import { getEnv } from "@/lib/cloudflare/route-context";
+import { rejectCsrf } from "@/lib/security/csrf";
 import { createDocument } from "@/lib/db/queries";
 
 export const runtime = "edge";
@@ -9,6 +10,11 @@ export async function POST(
   request: Request,
   context: { params: Promise<Record<string, string | string[] | undefined>> },
 ): Promise<Response> {
+  const csrfError = await rejectCsrf(request);
+  if (csrfError) {
+    return csrfError;
+  }
+
   const env = getEnv(context);
   const lucia = createLucia(env);
   const sessionId = readSessionIdFromRequest(request, env);

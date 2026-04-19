@@ -4,6 +4,7 @@ import {
   updateDocumentVisibility,
   type DocumentVisibility,
 } from "@/lib/db/queries";
+import { rejectCsrf } from "@/lib/security/csrf";
 
 export const runtime = "edge";
 
@@ -23,6 +24,11 @@ export async function PATCH(
   request: Request,
   context: { params: Promise<RouteParams> },
 ): Promise<Response> {
+  const csrfError = await rejectCsrf(request);
+  if (csrfError) {
+    return csrfError;
+  }
+
   let body: VisibilityBody;
   try {
     body = (await request.json()) as VisibilityBody;

@@ -4,7 +4,10 @@ import { maybeAlertSuspiciousSession } from "@/lib/auth/session-risk";
 import { verifyPassword } from "@/lib/auth/password";
 import { createTwoFactorChallengeCookie } from "@/lib/auth/two-factor";
 import { getEnv } from "@/lib/cloudflare/route-context";
+import { rejectCsrf, setCsrfCookie } from "@/lib/security/csrf";
+import { rateLimit } from "@/lib/security/rate-limit";
 import {
+  acceptPendingDocumentInvitationsForUser,
   getUserByEmail,
   getUserPasswordHashByEmail,
   getUserTwoFactorSettings,
@@ -26,6 +29,21 @@ export async function POST(
   request: Request,
   context: { params: Promise<Record<string, string | string[] | undefined>> },
 ): Promise<Response> {
+  try {
+    await rateLimit(request, null, {
+      limit: 5,
+      windowMs: 60_000,
+      route: "login",
+    });
+  } catch {
+    return Response.json({ success: false, error: "Too many requests. Try again later." }, { status: 429 });
+  }
+
+  const csrfError = await rejectCsrf(request);
+  if (csrfError) {
+    return csrfError;
+  }
+
   let body: LoginBody;
 
   try {
@@ -74,10 +92,13 @@ export async function POST(
       return Response.json({ success: false, error: "Invalid email or password" }, { status: 401 });
     }
 
+    await acceptPendingDocumentInvitationsForUser(user.id, user.attributes.email, env);
+
     const twoFactor = await getUserTwoFactorSettings(user.id, env);
     if (twoFactor?.enabled) {
       const headers = new Headers();
       headers.append("Set-Cookie", createTwoFactorChallengeCookie(user.id));
+      setCsrfCookie();
 
       return Response.json({ success: true, requiresTwoFactor: true }, { status: 200, headers });
     }
@@ -95,6 +116,7 @@ export async function POST(
 
     const headers = new Headers();
     setSessionCookie(headers, session.id, env);
+    setCsrfCookie();
 
     return Response.json(
       {

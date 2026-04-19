@@ -5,6 +5,7 @@ import {
   generateTwoFactorSecret,
 } from "@/lib/auth/two-factor";
 import { getEnv } from "@/lib/cloudflare/route-context";
+import { rejectCsrf } from "@/lib/security/csrf";
 import {
   getUserById,
   getUserTwoFactorSettings,
@@ -56,6 +57,11 @@ export async function POST(
   request: Request,
   context: { params: Promise<Record<string, string | string[] | undefined>> },
 ): Promise<Response> {
+  const csrfError = await rejectCsrf(request);
+  if (csrfError) {
+    return csrfError;
+  }
+
   const env = getEnv(context);
   const auth = await requireUser(request, env);
   if (auth instanceof Response) {

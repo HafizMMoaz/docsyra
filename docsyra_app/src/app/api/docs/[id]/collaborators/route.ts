@@ -28,7 +28,7 @@ export async function GET(
     {
       success: true,
       accessRole: access.accessRole,
-      ownerId: access.document.user_id,
+      ownerId: access.document.owner_id,
       collaborators,
     },
     { status: 200 },

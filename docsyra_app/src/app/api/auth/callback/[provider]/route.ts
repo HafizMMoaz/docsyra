@@ -14,6 +14,7 @@ import {
 import { readSessionIdFromRequest } from "@/lib/auth/lucia";
 import { getDB } from "@/lib/db/client";
 import {
+  acceptPendingDocumentInvitationsForUser,
   createUser,
   getUserByEmail,
   getUserById,
@@ -174,15 +175,19 @@ async function linkIdentity(
   email: string | null,
   name: string | null,
   avatar_url: string | null,
+  accessToken: string | null,
   env: any,
 ): Promise<void> {
   const db = getDB(env);
 
   await db
     .prepare(
-      "INSERT INTO auth_identities (id, user_id, provider, provider_user_id, email, name, avatar_url) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      `INSERT INTO auth_identities (id, user_id, provider, provider_user_id, email, name, avatar_url, access_token)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(provider, provider_user_id)
+      DO UPDATE SET user_id = excluded.user_id, email = excluded.email, name = excluded.name, avatar_url = excluded.avatar_url, access_token = excluded.access_token`,
     )
-    .bind(crypto.randomUUID(), userId, provider, providerUserId, email, name, avatar_url)
+    .bind(crypto.randomUUID(), userId, provider, providerUserId, email, name, avatar_url, accessToken)
     .run();
 }
 
@@ -210,6 +215,7 @@ export async function GET(
   try {
     const origin = url.origin;
     let providerUser: ProviderUser;
+    let providerAccessToken: string | null = null;
 
     if (provider === "google") {
       const codeVerifier = readOAuthCodeVerifier(request, provider);
@@ -219,10 +225,12 @@ export async function GET(
 
       const google = createGoogleOAuth(env, origin);
       const tokens = await google.validateAuthorizationCode(code, codeVerifier);
+      providerAccessToken = tokens.accessToken();
       providerUser = await fetchGoogleUser(tokens.accessToken());
     } else {
       const github = createGitHubOAuth(env, origin);
       const tokens = await github.validateAuthorizationCode(code);
+      providerAccessToken = tokens.accessToken();
       providerUser = await fetchGitHubUser(tokens.accessToken());
     }
 
@@ -258,7 +266,9 @@ export async function GET(
       }
 
       if (!existingIdentityUserId) {
-        await linkIdentity(provider, providerUser.id, userId, providerUser.email, providerUser.name, providerUser.avatar_url, env);
+        await linkIdentity(provider, providerUser.id, userId, providerUser.email, providerUser.name, providerUser.avatar_url, providerAccessToken, env);
+      } else {
+        await linkIdentity(provider, providerUser.id, userId, providerUser.email, providerUser.name, providerUser.avatar_url, providerAccessToken, env);
       }
     } else {
       if (existingIdentityUserId) {
@@ -283,11 +293,17 @@ export async function GET(
           userId = createdUser.id;
         }
 
-        await linkIdentity(provider, providerUser.id, userId, providerUser.email, providerUser.name, providerUser.avatar_url, env);
+        await linkIdentity(provider, providerUser.id, userId, providerUser.email, providerUser.name, providerUser.avatar_url, providerAccessToken, env);
+      }
+
+      if (existingIdentityUserId) {
+        await linkIdentity(provider, providerUser.id, userId, providerUser.email, providerUser.name, providerUser.avatar_url, providerAccessToken, env);
       }
     }
 
     await fillEmptyUserProfile(userId, providerUser, env);
+    const userProfile = await getUserById(userId, env);
+    await acceptPendingDocumentInvitationsForUser(userId, userProfile?.attributes.email ?? providerUser.email, env);
 
     const twoFactor = await getUserTwoFactorSettings(userId, env);
     if (!currentSession.user && twoFactor?.enabled) {

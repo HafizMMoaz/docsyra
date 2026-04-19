@@ -2,12 +2,19 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { getCsrfToken } from "@/lib/security/csrf-client";
 
 type DocumentSummary = {
   id: string;
   title: string | null;
   updated_at: number;
 };
+
+function csrfHeaders(): Record<string, string> {
+  return {
+    "x-csrf-token": getCsrfToken(),
+  };
+}
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -71,6 +78,9 @@ export default function DashboardPage() {
     try {
       const response = await fetch("/api/docs/create", {
         method: "POST",
+        headers: {
+          ...csrfHeaders(),
+        },
       });
 
       const data = (await response.json()) as { success?: boolean; id?: string; error?: string };

@@ -1,6 +1,7 @@
 import { clearSessionCookie, createLucia, setSessionCookie } from "@/lib/auth";
 import { getEnv } from "@/lib/cloudflare/route-context";
 import { readSessionIdFromRequest } from "@/lib/auth/lucia";
+import { setCsrfCookie } from "@/lib/security/csrf";
 
 export const runtime = "edge";
 
@@ -11,6 +12,8 @@ export async function GET(
   const env = getEnv(context);
   const lucia = createLucia(env);
   const sessionId = readSessionIdFromRequest(request, env);
+
+  setCsrfCookie();
 
   if (!sessionId) {
     return Response.json({ user: null }, { status: 200 });
@@ -33,6 +36,7 @@ export async function GET(
       user: {
         id: result.user.id,
         email: result.user.email,
+        email_verified: result.user.email_verified,
         name: result.user.name,
         avatar_url: result.user.avatar_url,
         status: result.user.status,

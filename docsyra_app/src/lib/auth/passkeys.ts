@@ -11,43 +11,7 @@ import {
 } from "@simplewebauthn/server";
 import type { DbEnv } from "@/lib/db/client";
 
-type ChallengePayload = {
-  type: "register" | "login";
-  challenge: string;
-  userId?: string;
-  email?: string;
-  exp: number;
-};
-
-const PASSKEY_CHALLENGE_COOKIE = "docsyra_passkey_challenge";
-const PASSKEY_CHALLENGE_TTL_SECONDS = 300;
-
-function toBase64Url(value: string): string {
-  if (typeof Buffer !== "undefined") {
-    return Buffer.from(value, "utf8").toString("base64url");
-  }
-
-  return btoa(value).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-}
-
-function fromBase64Url(value: string): string {
-  if (typeof Buffer !== "undefined") {
-    return Buffer.from(value, "base64url").toString("utf8");
-  }
-
-  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
-  return atob(normalized);
-}
-
-function serializeCookie(name: string, value: string, options?: { maxAge?: number }): string {
-  const parts = [`${name}=${encodeURIComponent(value)}`, "Path=/", "HttpOnly", "SameSite=Lax", "Secure"];
-
-  if (typeof options?.maxAge === "number") {
-    parts.push(`Max-Age=${Math.max(0, Math.floor(options.maxAge))}`);
-  }
-
-  return parts.join("; ");
-}
+export const PASSKEY_CHALLENGE_TTL_MS = 5 * 60 * 1000;
 
 function resolvePasskeyConfig(env?: DbEnv): { rpID: string; origin: string; rpName: string } {
   const rpID =
@@ -99,58 +63,12 @@ function fromUint8Array(value: Uint8Array): string {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-function readChallengeCookie(request: Request): ChallengePayload | null {
-  const cookieHeader = request.headers.get("cookie");
-  if (!cookieHeader) {
-    return null;
-  }
-
-  const token = cookieHeader
-    .split(";")
-    .map((part) => part.trim())
-    .find((part) => part.startsWith(`${PASSKEY_CHALLENGE_COOKIE}=`))
-    ?.split("=")
-    .slice(1)
-    .join("=");
-
-  if (!token) {
-    return null;
-  }
-
-  try {
-    const decoded = fromBase64Url(decodeURIComponent(token));
-    const payload = JSON.parse(decoded) as ChallengePayload;
-
-    if (!payload.challenge || !payload.type || typeof payload.exp !== "number") {
-      return null;
-    }
-
-    if (payload.exp <= Date.now()) {
-      return null;
-    }
-
-    return payload;
-  } catch {
-    return null;
-  }
-}
-
-function setChallengeCookie(payload: ChallengePayload): string {
-  return serializeCookie(PASSKEY_CHALLENGE_COOKIE, toBase64Url(JSON.stringify(payload)), {
-    maxAge: PASSKEY_CHALLENGE_TTL_SECONDS,
-  });
-}
-
-export function clearPasskeyChallengeCookie(): string {
-  return serializeCookie(PASSKEY_CHALLENGE_COOKIE, "", { maxAge: 0 });
-}
-
 export async function createPasskeyRegistrationOptions(input: {
   userId: string;
   email: string;
   existingCredentialIds: string[];
   env?: DbEnv;
-}): Promise<{ options: PublicKeyCredentialCreationOptionsJSON; setCookie: string }> {
+}): Promise<{ options: PublicKeyCredentialCreationOptionsJSON }> {
   const config = resolvePasskeyConfig(input.env);
   const options = await generateRegistrationOptions({
     rpName: config.rpName,
@@ -169,39 +87,24 @@ export async function createPasskeyRegistrationOptions(input: {
     })),
   });
 
-  const setCookie = setChallengeCookie({
-    type: "register",
-    challenge: options.challenge,
-    userId: input.userId,
-    email: input.email,
-    exp: Date.now() + PASSKEY_CHALLENGE_TTL_SECONDS * 1000,
-  });
-
-  return { options, setCookie };
+  return { options };
 }
 
 export async function verifyPasskeyRegistration(input: {
-  request: Request;
   response: RegistrationResponseJSON;
+  expectedChallenge: string;
   env?: DbEnv;
 }): Promise<{
   verified: boolean;
-  userId: string;
-  email: string;
   credentialId: string;
   publicKey: string;
   counter: number;
   transports: string[];
 }> {
-  const challenge = readChallengeCookie(input.request);
-  if (!challenge || challenge.type !== "register" || !challenge.userId || !challenge.email) {
-    throw new Error("Registration challenge expired");
-  }
-
   const config = resolvePasskeyConfig(input.env);
   const verification = await verifyRegistrationResponse({
     response: input.response,
-    expectedChallenge: challenge.challenge,
+    expectedChallenge: input.expectedChallenge,
     expectedOrigin: config.origin,
     expectedRPID: config.rpID,
     requireUserVerification: false,
@@ -210,8 +113,6 @@ export async function verifyPasskeyRegistration(input: {
   if (!verification.verified || !verification.registrationInfo) {
     return {
       verified: false,
-      userId: challenge.userId,
-      email: challenge.email,
       credentialId: "",
       publicKey: "",
       counter: 0,
@@ -224,8 +125,6 @@ export async function verifyPasskeyRegistration(input: {
 
   return {
     verified: true,
-    userId: challenge.userId,
-    email: challenge.email,
     credentialId: credential.id,
     publicKey: fromUint8Array(credential.publicKey),
     counter: credential.counter,
@@ -234,10 +133,9 @@ export async function verifyPasskeyRegistration(input: {
 }
 
 export async function createPasskeyLoginOptions(input: {
-  email: string;
   credentialIds: string[];
   env?: DbEnv;
-}): Promise<{ options: PublicKeyCredentialRequestOptionsJSON; setCookie: string }> {
+}): Promise<{ options: PublicKeyCredentialRequestOptionsJSON }> {
   const config = resolvePasskeyConfig(input.env);
 
   const options = await generateAuthenticationOptions({
@@ -249,35 +147,23 @@ export async function createPasskeyLoginOptions(input: {
     })),
   });
 
-  const setCookie = setChallengeCookie({
-    type: "login",
-    challenge: options.challenge,
-    email: input.email,
-    exp: Date.now() + PASSKEY_CHALLENGE_TTL_SECONDS * 1000,
-  });
-
-  return { options, setCookie };
+  return { options };
 }
 
 export async function verifyPasskeyLogin(input: {
-  request: Request;
   response: AuthenticationResponseJSON;
+  expectedChallenge: string;
   credentialPublicKey: string;
   credentialId: string;
   counter: number;
   transports: string[];
   env?: DbEnv;
-}): Promise<{ verified: boolean; newCounter: number; email: string }> {
-  const challenge = readChallengeCookie(input.request);
-  if (!challenge || challenge.type !== "login" || !challenge.email) {
-    throw new Error("Login challenge expired");
-  }
-
+}): Promise<{ verified: boolean; newCounter: number }> {
   const config = resolvePasskeyConfig(input.env);
 
   const verification = await verifyAuthenticationResponse({
     response: input.response,
-    expectedChallenge: challenge.challenge,
+    expectedChallenge: input.expectedChallenge,
     expectedOrigin: config.origin,
     expectedRPID: config.rpID,
     requireUserVerification: false,
@@ -290,14 +176,14 @@ export async function verifyPasskeyLogin(input: {
   });
 
   if (!verification.verified || !verification.authenticationInfo) {
-    return { verified: false, newCounter: input.counter, email: challenge.email };
+    return { verified: false, newCounter: input.counter };
   }
 
   const newCounter = verification.authenticationInfo.newCounter;
 
   if (newCounter <= input.counter) {
-    return { verified: false, newCounter: input.counter, email: challenge.email };
+    return { verified: false, newCounter: input.counter };
   }
 
-  return { verified: true, newCounter, email: challenge.email };
+  return { verified: true, newCounter };
 }

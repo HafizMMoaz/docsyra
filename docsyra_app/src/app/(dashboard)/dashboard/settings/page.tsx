@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { getSession } from "@/lib/auth/session-client";
 import { parseCreationOptionsFromJSON, type CreationOptionsJSON } from "@/lib/auth/passkey-client";
+import { getCsrfToken } from "@/lib/security/csrf-client";
 import type { User } from "@/types";
 import { COUNTRY_OPTIONS, INDUSTRY_OPTIONS, PROFESSION_OPTIONS } from "@/lib/profile-options";
 
@@ -17,6 +18,12 @@ function resolveSelectableValue(selected: string, otherValue: string): string {
   }
 
   return selected.trim();
+}
+
+function csrfHeaders(): Record<string, string> {
+  return {
+    "x-csrf-token": getCsrfToken(),
+  };
 }
 
 type Provider = "google" | "github";
@@ -67,6 +74,8 @@ export default function SettingsPage() {
   const [passkeys, setPasskeys] = useState<PasskeyItem[]>([]);
   const [creatingPasskey, setCreatingPasskey] = useState(false);
   const [removingPasskeyId, setRemovingPasskeyId] = useState<string | null>(null);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [sendingVerificationEmail, setSendingVerificationEmail] = useState(false);
 
   const [name, setName] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -98,6 +107,7 @@ export default function SettingsPage() {
       }
 
       setUser(currentUser);
+      setEmailVerified(Boolean(currentUser.email_verified));
       setName(currentUser.name ?? "");
       const initialProfession = currentUser.profession ?? "";
       const initialIndustry = currentUser.industry ?? "";
@@ -193,6 +203,7 @@ export default function SettingsPage() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          ...csrfHeaders(),
         },
         body: JSON.stringify({
           name,
@@ -223,7 +234,10 @@ export default function SettingsPage() {
     setSuccess(null);
 
     try {
-      const response = await fetch("/api/user/deactivate", { method: "POST" });
+      const response = await fetch("/api/user/deactivate", {
+        method: "POST",
+        headers: csrfHeaders(),
+      });
       const data = (await response.json()) as { success?: boolean; error?: string };
 
       if (!response.ok || !data.success) {
@@ -251,7 +265,10 @@ export default function SettingsPage() {
     setSuccess(null);
 
     try {
-      const response = await fetch("/api/user/delete", { method: "POST" });
+      const response = await fetch("/api/user/delete", {
+        method: "POST",
+        headers: csrfHeaders(),
+      });
       const data = (await response.json()) as { success?: boolean; error?: string };
 
       if (!response.ok || !data.success) {
@@ -290,6 +307,7 @@ export default function SettingsPage() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          ...csrfHeaders(),
         },
         body: JSON.stringify({ password: newPassword }),
       });
@@ -310,6 +328,47 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleSendVerificationEmail() {
+    if (emailVerified) {
+      setSuccess("Your email is already verified");
+      return;
+    }
+
+    setSendingVerificationEmail(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await fetch("/api/auth/verify/resend", {
+        method: "POST",
+        headers: csrfHeaders(),
+      });
+
+      const data = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+        alreadyVerified?: boolean;
+      };
+
+      if (!response.ok || !data.success) {
+        setError(data.error ?? "Failed to send verification email");
+        return;
+      }
+
+      if (data.alreadyVerified) {
+        setEmailVerified(true);
+        setSuccess("Your email is already verified");
+        return;
+      }
+
+      setSuccess("Verification email sent. Please check your inbox.");
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setSendingVerificationEmail(false);
+    }
+  }
+
   async function handleStartTwoFactorSetup() {
     setSettingUpTwoFactor(true);
     setError(null);
@@ -319,6 +378,7 @@ export default function SettingsPage() {
     try {
       const response = await fetch("/api/auth/2fa/setup", {
         method: "POST",
+        headers: csrfHeaders(),
       });
 
       const data = (await response.json()) as {
@@ -360,6 +420,7 @@ export default function SettingsPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...csrfHeaders(),
         },
         body: JSON.stringify({ code: twoFactorCode.trim() }),
       });
@@ -403,6 +464,7 @@ export default function SettingsPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...csrfHeaders(),
         },
         body: JSON.stringify({ code: twoFactorCode.trim() }),
       });
@@ -440,6 +502,7 @@ export default function SettingsPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...csrfHeaders(),
         },
         body: JSON.stringify({ provider }),
       });
@@ -500,6 +563,7 @@ export default function SettingsPage() {
     try {
       const optionsResponse = await fetch("/api/auth/passkey/register", {
         method: "POST",
+        headers: csrfHeaders(),
       });
 
       const optionsData = (await optionsResponse.json()) as {
@@ -526,6 +590,7 @@ export default function SettingsPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...csrfHeaders(),
         },
         body: JSON.stringify({ response: credential.toJSON() }),
       });
@@ -555,6 +620,7 @@ export default function SettingsPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...csrfHeaders(),
         },
         body: JSON.stringify({ passkeyId }),
       });
@@ -761,6 +827,31 @@ export default function SettingsPage() {
             {updatingPassword ? "Updating..." : "Update password"}
           </button>
         </form>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-6">
+        <h2 className="text-lg font-semibold text-slate-900">Email Verification</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Verify your email to unlock collaboration and public sharing actions.
+        </p>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+          <p className={`text-sm font-medium ${emailVerified ? "text-emerald-700" : "text-amber-700"}`}>
+            {emailVerified ? "Email verified" : "Email not verified"}
+          </p>
+          <button
+            type="button"
+            onClick={handleSendVerificationEmail}
+            disabled={sendingVerificationEmail || emailVerified}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
+          >
+            {emailVerified
+              ? "Verified"
+              : sendingVerificationEmail
+                ? "Sending..."
+                : "Send verification email"}
+          </button>
+        </div>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-6">

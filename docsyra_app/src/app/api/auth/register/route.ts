@@ -4,7 +4,9 @@ import { getSessionClientMetadata } from "@/lib/auth/session-metadata";
 import { maybeAlertSuspiciousSession } from "@/lib/auth/session-risk";
 import { createExpiry, createSecureToken } from "@/lib/auth/tokens";
 import { getEnv } from "@/lib/cloudflare/route-context";
+import { rejectCsrf, setCsrfCookie } from "@/lib/security/csrf";
 import {
+  acceptPendingDocumentInvitationsForUser,
   createEmailVerificationToken,
   deleteEmailVerificationTokensByUser,
   getUserPasswordHashByEmail,
@@ -28,6 +30,11 @@ export async function POST(
   request: Request,
   context: { params: Promise<Record<string, string | string[] | undefined>> },
 ): Promise<Response> {
+  const csrfError = await rejectCsrf(request);
+  if (csrfError) {
+    return csrfError;
+  }
+
   let body: Body;
 
   try {
@@ -72,12 +79,17 @@ export async function POST(
       passwordHash,
     );
 
+    await acceptPendingDocumentInvitationsForUser(user.id, emailValue, env);
+
     const verifyToken = createSecureToken();
     const verifyExpiresAt = createExpiry(30);
     await deleteEmailVerificationTokensByUser(user.id, env);
     await createEmailVerificationToken(user.id, verifyToken, verifyExpiresAt, env);
 
-    const appBase = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://docsyra.app";
+    const appBase =
+      (typeof env?.NEXT_PUBLIC_APP_URL === "string" && env.NEXT_PUBLIC_APP_URL.trim()) ||
+      (typeof process.env.NEXT_PUBLIC_APP_URL === "string" && process.env.NEXT_PUBLIC_APP_URL.trim()) ||
+      new URL(request.url).origin;
     const verifyLink = `${appBase.replace(/\/+$/, "")}/api/auth/verify?token=${encodeURIComponent(verifyToken)}`;
 
     try {
@@ -107,6 +119,7 @@ export async function POST(
 
     const headers = new Headers();
     setSessionCookie(headers, session.id, env);
+    setCsrfCookie();
 
     return Response.json(
       {

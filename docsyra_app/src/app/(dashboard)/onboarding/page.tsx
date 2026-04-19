@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { getSession } from "@/lib/auth/session-client";
+import { getCsrfToken } from "@/lib/security/csrf-client";
 import { COUNTRY_OPTIONS, INDUSTRY_OPTIONS, PROFESSION_OPTIONS } from "@/lib/profile-options";
 
 function isOptionValue(value: string, options: readonly string[]): boolean {
@@ -15,6 +16,12 @@ function resolveSelectableValue(selected: string, otherValue: string): string {
   }
 
   return selected.trim();
+}
+
+function csrfHeaders(): Record<string, string> {
+  return {
+    "x-csrf-token": getCsrfToken(),
+  };
 }
 
 export default function OnboardingPage() {
@@ -112,6 +119,7 @@ export default function OnboardingPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...csrfHeaders(),
         },
         body: JSON.stringify({
           name,

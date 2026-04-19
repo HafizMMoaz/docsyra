@@ -2,11 +2,19 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, type FormEvent, type MouseEventHandler, useEffect, useState } from "react";
+import { getSession } from "@/lib/auth/session-client";
 import { parseRequestOptionsFromJSON, type RequestOptionsJSON } from "@/lib/auth/passkey-client";
+import { getCsrfToken } from "@/lib/security/csrf-client";
 
 type PublicKeyCredentialWithJSON = PublicKeyCredential & {
   toJSON?: () => unknown;
 };
+
+function csrfHeaders(): Record<string, string> {
+  return {
+    "x-csrf-token": getCsrfToken(),
+  };
+}
 
 function LoginPageContent() {
   const router = useRouter();
@@ -38,6 +46,10 @@ function LoginPageContent() {
       setMessage("Enter your authenticator code or a backup code.");
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    void getSession();
+  }, []);
 
   async function handleContinueWithEmail(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -107,6 +119,7 @@ function LoginPageContent() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...csrfHeaders(),
         },
         body: JSON.stringify({
           email: email.trim(),
@@ -163,6 +176,7 @@ function LoginPageContent() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...csrfHeaders(),
         },
         body: JSON.stringify({
           email: email.trim(),
@@ -207,6 +221,7 @@ function LoginPageContent() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...csrfHeaders(),
         },
         body: JSON.stringify({ email: email.trim() }),
       });
@@ -243,6 +258,7 @@ function LoginPageContent() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...csrfHeaders(),
         },
         body: JSON.stringify({ email: email.trim(), code: otpCode.trim() }),
       });
@@ -291,6 +307,7 @@ function LoginPageContent() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...csrfHeaders(),
         },
         body: JSON.stringify({ code: twoFactorCode.trim() }),
       });
@@ -342,6 +359,7 @@ function LoginPageContent() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...csrfHeaders(),
         },
         body: JSON.stringify({ email: email.trim() }),
       });
@@ -370,6 +388,7 @@ function LoginPageContent() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...csrfHeaders(),
         },
         body: JSON.stringify({ response: assertion.toJSON() }),
       });

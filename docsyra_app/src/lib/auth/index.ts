@@ -1,5 +1,10 @@
 import { type DbEnv } from "../db/client";
-import { createUser, getUserById, updateSessionClientMetadata } from "../db/queries";
+import {
+  acceptPendingDocumentInvitationsForUser,
+  createUser,
+  getUserById,
+  updateSessionClientMetadata,
+} from "../db/queries";
 import { clearSessionCookie, setSessionCookie } from "./cookies";
 import { createLucia, readSessionIdFromRequest } from "./lucia";
 import { getSessionClientMetadata } from "./session-metadata";
@@ -17,6 +22,8 @@ export async function createSession(userId: string, env?: DbEnv, request?: Reque
   if (!userRecord) {
     userRecord = await createUser(userId, null, null, null, "incomplete", null, null, null, env);
   }
+
+  await acceptPendingDocumentInvitationsForUser(userId, userRecord.attributes.email, env);
 
   const session = await auth.createSession(userId, {});
 
@@ -38,6 +45,7 @@ export async function createSession(userId: string, env?: DbEnv, request?: Reque
     user: {
       id: userRecord.id,
       email: userRecord.attributes.email,
+      email_verified: userRecord.attributes.email_verified,
       name: userRecord.attributes.name,
       avatar_url: userRecord.attributes.avatar_url,
       status: userRecord.attributes.status as "incomplete" | "active" | "inactive" | null,
@@ -82,6 +90,7 @@ export async function validateSession(request: Request, env?: DbEnv): Promise<Se
     user: {
       id: result.user.id,
       email: result.user.email,
+      email_verified: result.user.email_verified,
       name: result.user.name,
       avatar_url: result.user.avatar_url,
       status: result.user.status as "incomplete" | "active" | "inactive" | null,

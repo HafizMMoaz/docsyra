@@ -1,5 +1,6 @@
 import { hashPassword } from "@/lib/auth/password";
 import { getEnv } from "@/lib/cloudflare/route-context";
+import { rejectCsrf } from "@/lib/security/csrf";
 import {
   deletePasswordResetTokenByToken,
   deletePasswordResetTokensByUser,
@@ -18,6 +19,11 @@ export async function POST(
   request: Request,
   context: { params: Promise<Record<string, string | string[] | undefined>> },
 ): Promise<Response> {
+  const csrfError = await rejectCsrf(request);
+  if (csrfError) {
+    return csrfError;
+  }
+
   let body: Body;
   try {
     body = (await request.json()) as Body;

@@ -1,11 +1,14 @@
 import { createLucia } from "@/lib/auth";
 import { readSessionIdFromRequest } from "@/lib/auth/lucia";
-import {
-  clearPasskeyChallengeCookie,
-  verifyPasskeyRegistration,
-} from "@/lib/auth/passkeys";
+import { verifyPasskeyRegistration } from "@/lib/auth/passkeys";
 import { getEnv } from "@/lib/cloudflare/route-context";
-import { createPasskeyRecord } from "@/lib/db/queries";
+import { rejectCsrf } from "@/lib/security/csrf";
+import { rateLimit } from "@/lib/security/rate-limit";
+import {
+  createPasskeyRecord,
+  deletePasskeyChallengeById,
+  getPasskeyChallengeByUserId,
+} from "@/lib/db/queries";
 import type { RegistrationResponseJSON } from "@simplewebauthn/server";
 
 export const runtime = "edge";
@@ -18,6 +21,11 @@ export async function POST(
   request: Request,
   context: { params: Promise<Record<string, string | string[] | undefined>> },
 ): Promise<Response> {
+  const csrfError = await rejectCsrf(request);
+  if (csrfError) {
+    return csrfError;
+  }
+
   const env = getEnv(context);
   const lucia = createLucia(env);
   const sessionId = readSessionIdFromRequest(request, env);
@@ -31,6 +39,16 @@ export async function POST(
     return Response.json({ success: false, error: "Unauthorized" }, { status: 401 });
   }
 
+  try {
+    await rateLimit(request, result.user.id, {
+      limit: 5,
+      windowMs: 60_000,
+      route: "passkey",
+    });
+  } catch {
+    return Response.json({ success: false, error: "Too many requests. Try again later." }, { status: 429 });
+  }
+
   let body: Body;
   try {
     body = (await request.json()) as Body;
@@ -42,19 +60,31 @@ export async function POST(
     return Response.json({ success: false, error: "Passkey response is required" }, { status: 400 });
   }
 
+  const challenge = await getPasskeyChallengeByUserId(result.user.id, env);
+  if (!challenge) {
+    return Response.json({ success: false, error: "Passkey challenge not found" }, { status: 404 });
+  }
+
+  if (challenge.expires_at <= Date.now()) {
+    await deletePasskeyChallengeById(challenge.id, env);
+    return Response.json({ success: false, error: "Passkey challenge expired" }, { status: 400 });
+  }
+
+  await deletePasskeyChallengeById(challenge.id, env);
+
   const verification = await verifyPasskeyRegistration({
-    request,
     response: body.response as RegistrationResponseJSON,
+    expectedChallenge: challenge.challenge,
     env,
   });
 
-  if (!verification.verified || verification.userId !== result.user.id) {
+  if (!verification.verified) {
     return Response.json({ success: false, error: "Passkey verification failed" }, { status: 400 });
   }
 
   await createPasskeyRecord(
     {
-      userId: verification.userId,
+      userId: result.user.id,
       credentialId: verification.credentialId,
       publicKey: verification.publicKey,
       counter: verification.counter,
@@ -63,8 +93,5 @@ export async function POST(
     env,
   );
 
-  const headers = new Headers();
-  headers.append("Set-Cookie", clearPasskeyChallengeCookie());
-
-  return Response.json({ success: true }, { status: 200, headers });
+  return Response.json({ success: true }, { status: 200 });
 }

@@ -4,10 +4,14 @@ import {
   getUserByEmail,
   getUserAccess,
   isUserEmailVerified,
+  upsertDocumentInvitation,
+  logDocumentActivity,
   type CollaboratorRole,
 } from "@/lib/db/queries";
+import { rejectCsrf } from "@/lib/security/csrf";
+import { rateLimit } from "@/lib/security/rate-limit";
 import { sendEmail } from "@/lib/email";
-import { inviteTemplate } from "@/lib/email/templates";
+import { inviteRegistrationTemplate, inviteTemplate } from "@/lib/email/templates";
 
 export const runtime = "edge";
 
@@ -25,6 +29,11 @@ export async function POST(
   request: Request,
   context: { params: Promise<Record<string, string | string[] | undefined>> },
 ): Promise<Response> {
+  const csrfError = await rejectCsrf(request);
+  if (csrfError) {
+    return csrfError;
+  }
+
   let body: InviteBody;
   try {
     body = (await request.json()) as InviteBody;
@@ -48,16 +57,66 @@ export async function POST(
     return Response.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 
+  if (!access.userId) {
+    return Response.json({ success: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    await rateLimit(request, access.userId, {
+      limit: 10,
+      windowMs: 60_000,
+      route: "invite",
+    });
+  } catch {
+    return Response.json({ success: false, error: "Too many requests. Try again later." }, { status: 429 });
+  }
+
   if (!access.userId || !(await isUserEmailVerified(access.userId, access.env))) {
     return Response.json({ success: false, error: "Verify your email before inviting collaborators" }, { status: 403 });
   }
 
+  const appBase = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://docsyra.app";
+  const normalizedBase = appBase.replace(/\/+$/, "");
+  const docLink = `${normalizedBase}/editor/${encodeURIComponent(documentId)}`;
+  const docTitle = access.document.title?.trim() || "Untitled";
+  const registerLink = `${normalizedBase}/login`;
+
   const user = await getUserByEmail(email, access.env);
   if (!user) {
-    return Response.json({ success: false, error: "User not found" }, { status: 404 });
+    await upsertDocumentInvitation(
+      {
+        documentId,
+        inviteeEmail: email,
+        invitedByUserId: access.userId,
+        role: body.role,
+        inviteeUserId: null,
+        acceptedAt: null,
+      },
+      access.env,
+    );
+
+    try {
+      await sendEmail(
+        {
+          to: email,
+          subject: "You are invited to Docsyra",
+          html: inviteRegistrationTemplate({
+            docTitle,
+            docLink,
+            registerLink,
+            isPublicDocument: access.document.visibility === "public",
+          }),
+        },
+        access.env as Parameters<typeof sendEmail>[1],
+      );
+    } catch (error) {
+      console.error("[email][invite-register] Failed to send invite email", error);
+    }
+
+    return Response.json({ success: true, pendingSignup: true }, { status: 201 });
   }
 
-  if (user.id === access.document.user_id) {
+  if (user.id === access.document.owner_id) {
     return Response.json({ success: false, error: "Owner is already authorized" }, { status: 409 });
   }
 
@@ -68,11 +127,24 @@ export async function POST(
 
   await addCollaborator(documentId, user.id, body.role, access.env);
 
-  if (user.attributes.email) {
-    const appBase = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://docsyra.app";
-    const docLink = `${appBase.replace(/\/+$/, "")}/editor/${encodeURIComponent(documentId)}`;
-    const docTitle = access.document.title?.trim() || "Untitled";
+  // 📋 Audit log collaborator addition
+  await logDocumentActivity(documentId, access.userId, "collaborator_added", access.env).catch(
+    (error) => console.error("[audit] Failed to log collaborator addition", error),
+  );
 
+  await upsertDocumentInvitation(
+    {
+      documentId,
+      inviteeEmail: email,
+      invitedByUserId: access.userId,
+      role: body.role,
+      inviteeUserId: user.id,
+      acceptedAt: Date.now(),
+    },
+    access.env,
+  );
+
+  if (user.attributes.email) {
     try {
       await sendEmail(
         {
@@ -80,7 +152,7 @@ export async function POST(
           subject: "You were invited to a document",
           html: inviteTemplate(docTitle, docLink),
         },
-        access.env,
+        access.env as Parameters<typeof sendEmail>[1],
       );
     } catch (error) {
       console.error("[email][invite] Failed to send invite email", error);

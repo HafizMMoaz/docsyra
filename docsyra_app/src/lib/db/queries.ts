@@ -1,5 +1,5 @@
 import type { DatabaseSession, DatabaseUser } from "lucia";
-import { decryptTwoFactorSecret, encryptTwoFactorSecret } from "../auth/two-factor";
+import { encryptSecret } from "../auth/two-factor";
 import { getDB, type DbEnv } from "./client";
 
 type DbSessionRecord = {
@@ -17,8 +17,10 @@ type DbSessionFingerprintRecord = {
 
 type DbAuthIdentityRecord = {
   provider: string;
+  provider_user_id?: string;
   email: string | null;
   avatar_url: string | null;
+  access_token?: string | null;
 };
 
 type DbUserRecord = {
@@ -53,6 +55,13 @@ type DbPasskeyRecord = {
   created_at: number;
 };
 
+type DbPasskeyChallengeRecord = {
+  id: string;
+  user_id: string | null;
+  challenge: string;
+  expires_at: number;
+};
+
 type DbEmailVerificationTokenRecord = {
   id: string;
   user_id: string;
@@ -84,12 +93,29 @@ type DbAuthRateLimitRecord = {
 
 type DbDocumentRecord = {
   id: string;
-  user_id: string;
+  owner_id: string | null;
   title: string | null;
   content: string | null;
   visibility: string | null;
+  github_repo?: string | null;
+  github_branch?: string | null;
+  github_path?: string | null;
+  last_github_sha?: string | null;
+  last_synced_at?: number | null;
   created_at: number;
   updated_at: number;
+};
+
+type DbDocumentVersionRecord = {
+  id: string;
+  document_id: string;
+  content: string;
+  title: string | null;
+  type: string | null;
+  label: string | null;
+  created_at: number;
+  created_by: string | null;
+  version_number: number | null;
 };
 
 type DbDocumentCollaboratorRecord = {
@@ -110,35 +136,104 @@ type DbDocumentCollaboratorWithUserRecord = {
   name: string | null;
 };
 
+type DbDocumentInvitationRecord = {
+  id: string;
+  document_id: string;
+  invitee_email: string;
+  invitee_user_id: string | null;
+  invited_by_user_id: string;
+  role: string;
+  accepted_at: number | null;
+  created_at: number;
+  updated_at: number;
+};
+
+type DbCommentThreadRecord = {
+  id: string;
+  document_id: string;
+  created_by: string;
+  selection_from: number;
+  selection_to: number;
+  selection_text: string | null;
+  selection_context_before: string | null;
+  selection_context_after: string | null;
+  resolved: number;
+  created_at: number;
+};
+
+type DbCommentRecord = {
+  id: string;
+  thread_id: string;
+  user_id: string;
+  content: string;
+  created_at: number;
+  user_name?: string | null;
+  user_email?: string | null;
+};
+
+type DbNotificationRecord = {
+  id: string;
+  user_id: string;
+  actor_user_id: string;
+  document_id: string;
+  thread_id: string | null;
+  comment_id: string | null;
+  type: string;
+  mention_token: string | null;
+  message: string;
+  read_at: number | null;
+  created_at: number;
+  actor_name?: string | null;
+  actor_email?: string | null;
+  document_title?: string | null;
+};
+
 export type CollaboratorRole = "viewer" | "editor";
 export type DocumentAccessRole = "owner" | CollaboratorRole;
 export type DocumentVisibility = "private" | "public";
-export type DocumentActivityAction = "view" | "open" | "edit" | "join";
+export type DocumentActivityAction = "view" | "open" | "edit" | "join" | "public_access" | "transfer_ownership" | "invite_sent" | "collaborator_added" | "collaborator_removed" | "role_updated";
+export type CommentMessage = {
+  id: string;
+  threadId: string;
+  userId: string;
+  content: string;
+  createdAt: number;
+  userName: string | null;
+  userEmail: string | null;
+};
 
-let warnedMissingTwoFactorKeyInDev = false;
+export type CommentThread = {
+  id: string;
+  documentId: string;
+  createdBy: string;
+  selectionFrom: number;
+  selectionTo: number;
+  selectionText: string | null;
+  selectionContextBefore: string | null;
+  selectionContextAfter: string | null;
+  resolved: boolean;
+  createdAt: number;
+  comments: CommentMessage[];
+};
 
-function resolveTwoFactorKey(env?: DbEnv): string {
-  const fromEnv = env?.TWO_FACTOR_SECRET_KEY?.trim();
-  if (fromEnv) {
-    return fromEnv;
-  }
+export type NotificationType = "comment" | "mention";
 
-  const fromProcess = process.env.TWO_FACTOR_SECRET_KEY?.trim();
-  if (fromProcess) {
-    return fromProcess;
-  }
-
-  if (process.env.NODE_ENV !== "production") {
-    if (!warnedMissingTwoFactorKeyInDev) {
-      console.warn("[security][2fa] TWO_FACTOR_SECRET_KEY missing; using development fallback key.");
-      warnedMissingTwoFactorKeyInDev = true;
-    }
-
-    return "docsyra-dev-insecure-fallback-key-change-me";
-  }
-
-  throw new Error("TWO_FACTOR_SECRET_KEY is not configured");
-}
+export type NotificationItem = {
+  id: string;
+  userId: string;
+  actorUserId: string;
+  actorName: string | null;
+  actorEmail: string | null;
+  documentId: string;
+  documentTitle: string | null;
+  threadId: string | null;
+  commentId: string | null;
+  type: NotificationType;
+  mentionToken: string | null;
+  message: string;
+  readAt: number | null;
+  createdAt: number;
+};
 
 type DbDocumentActivityLogRecord = {
   id: string;
@@ -164,6 +259,7 @@ function toDatabaseUser(row: DbUserRecord): DatabaseUser {
     id: row.id,
     attributes: {
       email: row.email,
+      email_verified: row.email_verified === 1,
       name: row.name,
       avatar_url: row.avatar_url,
       status: row.status,
@@ -200,6 +296,7 @@ export async function createUser(
     id,
     attributes: {
       email,
+      email_verified: false,
       name,
       avatar_url,
       status,
@@ -371,9 +468,7 @@ export async function getUserTwoFactorSettings(
     return null;
   }
 
-  const secret = row.two_factor_secret
-    ? await decryptTwoFactorSecret(row.two_factor_secret, resolveTwoFactorKey(env))
-    : null;
+  const secret = row.two_factor_secret;
 
   return {
     enabled: row.two_factor_enabled === 1,
@@ -383,7 +478,7 @@ export async function getUserTwoFactorSettings(
 
 export async function setUserTwoFactorSecret(userId: string, secret: string | null, env?: DbEnv): Promise<void> {
   const db = getDB(env);
-  const encryptedSecret = secret ? await encryptTwoFactorSecret(secret, resolveTwoFactorKey(env)) : null;
+  const encryptedSecret = secret ? await encryptSecret(secret) : null;
 
   await db
     .prepare("UPDATE users SET two_factor_secret = ? WHERE id = ?")
@@ -523,6 +618,83 @@ export async function createPasskeyRecord(
       JSON.stringify(input.transports),
       Date.now(),
     )
+    .run();
+}
+
+export async function deleteExpiredPasskeyChallenges(now: number = Date.now(), env?: DbEnv): Promise<void> {
+  const db = getDB(env);
+
+  await db
+    .prepare("DELETE FROM passkey_challenges WHERE expires_at <= ?")
+    .bind(now)
+    .run();
+}
+
+export async function createPasskeyChallenge(
+  input: {
+    userId: string | null;
+    challenge: string;
+    expiresAt: number;
+  },
+  env?: DbEnv,
+): Promise<{ id: string; userId: string | null; challenge: string; expiresAt: number }> {
+  const db = getDB(env);
+
+  await deleteExpiredPasskeyChallenges(Date.now(), env);
+
+  if (input.userId) {
+    await db
+      .prepare("DELETE FROM passkey_challenges WHERE user_id = ?")
+      .bind(input.userId)
+      .run();
+  } else {
+    await db.prepare("DELETE FROM passkey_challenges WHERE user_id IS NULL").run();
+  }
+
+  const id = crypto.randomUUID();
+
+  await db
+    .prepare("INSERT INTO passkey_challenges (id, user_id, challenge, expires_at) VALUES (?, ?, ?, ?)")
+    .bind(id, input.userId, input.challenge, input.expiresAt)
+    .run();
+
+  return {
+    id,
+    userId: input.userId,
+    challenge: input.challenge,
+    expiresAt: input.expiresAt,
+  };
+}
+
+export async function getPasskeyChallengeByUserId(
+  userId: string,
+  env?: DbEnv,
+): Promise<DbPasskeyChallengeRecord | null> {
+  const db = getDB(env);
+
+  const row = await db
+    .prepare("SELECT id, user_id, challenge, expires_at FROM passkey_challenges WHERE user_id = ? ORDER BY expires_at DESC LIMIT 1")
+    .bind(userId)
+    .first<DbPasskeyChallengeRecord>();
+
+  return row ?? null;
+}
+
+export async function deletePasskeyChallengeById(id: string, env?: DbEnv): Promise<void> {
+  const db = getDB(env);
+
+  await db
+    .prepare("DELETE FROM passkey_challenges WHERE id = ?")
+    .bind(id)
+    .run();
+}
+
+export async function deletePasskeyChallengesByUserId(userId: string, env?: DbEnv): Promise<void> {
+  const db = getDB(env);
+
+  await db
+    .prepare("DELETE FROM passkey_challenges WHERE user_id = ?")
+    .bind(userId)
     .run();
 }
 
@@ -717,6 +889,29 @@ export async function getUserAuthIdentities(
   return result.results ?? [];
 }
 
+export async function getGitHubIdentityForUser(
+  userId: string,
+  env?: DbEnv,
+): Promise<{ provider_user_id: string; access_token: string } | null> {
+  const db = getDB(env);
+
+  const row = await db
+    .prepare(
+      "SELECT provider_user_id, access_token FROM auth_identities WHERE user_id = ? AND provider = 'github' LIMIT 1",
+    )
+    .bind(userId)
+    .first<{ provider_user_id: string; access_token: string | null }>();
+
+  if (!row?.access_token) {
+    return null;
+  }
+
+  return {
+    provider_user_id: row.provider_user_id,
+    access_token: row.access_token,
+  };
+}
+
 export async function disconnectUserAuthIdentity(
   userId: string,
   provider: string,
@@ -803,7 +998,7 @@ export async function deleteEmailVerificationTokenByToken(token: string, env?: D
   const db = getDB(env);
 
   await db
-    .prepare("DELETE FROM email_verification_tokens WHERE token = ? LIMIT 1")
+    .prepare("DELETE FROM email_verification_tokens WHERE token = ?")
     .bind(token)
     .run();
 }
@@ -969,40 +1164,336 @@ export async function checkAndIncrementRateLimit(
 export async function createDocument(
   userId: string,
   env?: DbEnv,
-): Promise<{ id: string; user_id: string; title: string; content: string; visibility: DocumentVisibility; created_at: number; updated_at: number }> {
+): Promise<{ id: string; owner_id: string; title: string; content: string; visibility: DocumentVisibility; github_repo: string | null; github_branch: string | null; github_path: string | null; last_github_sha: string | null; last_synced_at: number | null; created_at: number; updated_at: number }> {
   const db = getDB(env);
   const id = crypto.randomUUID();
   const now = Date.now();
   const title = "Untitled";
   const content = "";
   const visibility: DocumentVisibility = "private";
+  const githubRepo: string | null = null;
+  const githubBranch: string | null = null;
+  const githubPath: string | null = null;
+  const lastGitHubSha: string | null = null;
+  const lastSyncedAt: number | null = null;
 
   await db
     .prepare(
-      "INSERT INTO documents (id, user_id, title, content, visibility, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO documents (id, owner_id, title, content, visibility, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(id, userId, title, content, visibility, now, now)
     .run();
 
   return {
     id,
-    user_id: userId,
+    owner_id: userId,
     title,
     content,
     visibility,
+    github_repo: githubRepo,
+    github_branch: githubBranch,
+    github_path: githubPath,
+    last_github_sha: lastGitHubSha,
+    last_synced_at: lastSyncedAt,
     created_at: now,
     updated_at: now,
   };
 }
 
+export async function createCommentThread(
+  input: {
+    id?: string;
+    documentId: string;
+    userId: string;
+    selectionFrom: number;
+    selectionTo: number;
+    selectionText?: string | null;
+    selectionContextBefore?: string | null;
+    selectionContextAfter?: string | null;
+  },
+  env?: DbEnv,
+): Promise<{ id: string; documentId: string; createdBy: string; selectionFrom: number; selectionTo: number; selectionText: string | null; selectionContextBefore: string | null; selectionContextAfter: string | null; createdAt: number }> {
+  const db = getDB(env);
+  const id = input.id ?? crypto.randomUUID();
+  const createdAt = Date.now();
+
+  await db
+    .prepare(
+      "INSERT INTO comment_threads (id, document_id, created_by, selection_from, selection_to, selection_text, selection_context_before, selection_context_after, resolved, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)",
+    )
+    .bind(
+      id,
+      input.documentId,
+      input.userId,
+      input.selectionFrom,
+      input.selectionTo,
+      input.selectionText ?? null,
+      input.selectionContextBefore ?? null,
+      input.selectionContextAfter ?? null,
+      createdAt,
+    )
+    .run();
+
+  return {
+    id,
+    documentId: input.documentId,
+    createdBy: input.userId,
+    selectionFrom: input.selectionFrom,
+    selectionTo: input.selectionTo,
+    selectionText: input.selectionText ?? null,
+    selectionContextBefore: input.selectionContextBefore ?? null,
+    selectionContextAfter: input.selectionContextAfter ?? null,
+    createdAt,
+  };
+}
+
+export async function addComment(
+  input: {
+    id?: string;
+    threadId: string;
+    userId: string;
+    content: string;
+  },
+  env?: DbEnv,
+): Promise<{ id: string; threadId: string; userId: string; content: string; createdAt: number }> {
+  const db = getDB(env);
+  const id = input.id ?? crypto.randomUUID();
+  const createdAt = Date.now();
+
+  await db
+    .prepare("INSERT INTO comments (id, thread_id, user_id, content, created_at) VALUES (?, ?, ?, ?, ?)")
+    .bind(id, input.threadId, input.userId, input.content, createdAt)
+    .run();
+
+  return {
+    id,
+    threadId: input.threadId,
+    userId: input.userId,
+    content: input.content,
+    createdAt,
+  };
+}
+
+export async function getCommentThreadById(
+  threadId: string,
+  env?: DbEnv,
+): Promise<{ id: string; documentId: string; createdBy: string; selectionFrom: number; selectionTo: number; selectionText: string | null; selectionContextBefore: string | null; selectionContextAfter: string | null; resolved: boolean; createdAt: number } | null> {
+  const db = getDB(env);
+
+  const row = await db
+    .prepare(
+      "SELECT id, document_id, created_by, selection_from, selection_to, selection_text, selection_context_before, selection_context_after, resolved, created_at FROM comment_threads WHERE id = ? LIMIT 1",
+    )
+    .bind(threadId)
+    .first<DbCommentThreadRecord>();
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    documentId: row.document_id,
+    createdBy: row.created_by,
+    selectionFrom: row.selection_from,
+    selectionTo: row.selection_to,
+    selectionText: row.selection_text ?? null,
+    selectionContextBefore: row.selection_context_before ?? null,
+    selectionContextAfter: row.selection_context_after ?? null,
+    resolved: row.resolved === 1,
+    createdAt: row.created_at,
+  };
+}
+
+export async function getCommentsByDoc(documentId: string, env?: DbEnv): Promise<CommentThread[]> {
+  const db = getDB(env);
+
+  const threadRows = await db
+    .prepare(
+      "SELECT id, document_id, created_by, selection_from, selection_to, selection_text, selection_context_before, selection_context_after, resolved, created_at FROM comment_threads WHERE document_id = ? ORDER BY created_at ASC",
+    )
+    .bind(documentId)
+    .all<DbCommentThreadRecord>();
+
+  const threads = threadRows.results ?? [];
+  if (threads.length === 0) {
+    return [];
+  }
+
+  const commentRows = await db
+    .prepare(
+      `SELECT c.id, c.thread_id, c.user_id, c.content, c.created_at, u.name AS user_name, u.email AS user_email
+       FROM comments c
+       LEFT JOIN users u ON u.id = c.user_id
+       INNER JOIN comment_threads t ON t.id = c.thread_id
+       WHERE t.document_id = ?
+       ORDER BY c.created_at ASC`,
+    )
+    .bind(documentId)
+    .all<DbCommentRecord>();
+
+  const commentsByThread = new Map<string, CommentMessage[]>();
+
+  for (const row of commentRows.results ?? []) {
+    const next: CommentMessage = {
+      id: row.id,
+      threadId: row.thread_id,
+      userId: row.user_id,
+      content: row.content,
+      createdAt: row.created_at,
+      userName: row.user_name ?? null,
+      userEmail: row.user_email ?? null,
+    };
+
+    const list = commentsByThread.get(row.thread_id) ?? [];
+    list.push(next);
+    commentsByThread.set(row.thread_id, list);
+  }
+
+  return threads.map((thread) => ({
+    id: thread.id,
+    documentId: thread.document_id,
+    createdBy: thread.created_by,
+    selectionFrom: thread.selection_from,
+    selectionTo: thread.selection_to,
+    selectionText: thread.selection_text ?? null,
+    selectionContextBefore: thread.selection_context_before ?? null,
+    selectionContextAfter: thread.selection_context_after ?? null,
+    resolved: thread.resolved === 1,
+    createdAt: thread.created_at,
+    comments: commentsByThread.get(thread.id) ?? [],
+  }));
+}
+
+export async function setCommentThreadResolved(
+  input: { threadId: string; resolved: boolean },
+  env?: DbEnv,
+): Promise<void> {
+  const db = getDB(env);
+
+  await db
+    .prepare("UPDATE comment_threads SET resolved = ? WHERE id = ?")
+    .bind(input.resolved ? 1 : 0, input.threadId)
+    .run();
+}
+
+export async function createNotification(
+  input: {
+    id?: string;
+    userId: string;
+    actorUserId: string;
+    documentId: string;
+    threadId?: string | null;
+    commentId?: string | null;
+    type: NotificationType;
+    mentionToken?: string | null;
+    message: string;
+  },
+  env?: DbEnv,
+): Promise<{ id: string; createdAt: number }> {
+  const db = getDB(env);
+  const id = input.id ?? crypto.randomUUID();
+  const createdAt = Date.now();
+
+  await db
+    .prepare(
+      "INSERT INTO notifications (id, user_id, actor_user_id, document_id, thread_id, comment_id, type, mention_token, message, read_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?)",
+    )
+    .bind(
+      id,
+      input.userId,
+      input.actorUserId,
+      input.documentId,
+      input.threadId ?? null,
+      input.commentId ?? null,
+      input.type,
+      input.mentionToken ?? null,
+      input.message,
+      createdAt,
+    )
+    .run();
+
+  return { id, createdAt };
+}
+
+export async function getNotificationsByUser(
+  userId: string,
+  options?: { limit?: number; unreadOnly?: boolean },
+  env?: DbEnv,
+): Promise<NotificationItem[]> {
+  const db = getDB(env);
+  const limit = Math.max(1, Math.min(options?.limit ?? 20, 100));
+
+  const unreadCondition = options?.unreadOnly ? "AND n.read_at IS NULL" : "";
+  const result = await db
+    .prepare(
+      `SELECT n.id, n.user_id, n.actor_user_id, n.document_id, n.thread_id, n.comment_id, n.type, n.mention_token, n.message, n.read_at, n.created_at,
+              u.name AS actor_name, u.email AS actor_email, d.title AS document_title
+       FROM notifications n
+       LEFT JOIN users u ON u.id = n.actor_user_id
+       LEFT JOIN documents d ON d.id = n.document_id
+       WHERE n.user_id = ? ${unreadCondition}
+       ORDER BY n.created_at DESC
+       LIMIT ?`,
+    )
+    .bind(userId, limit)
+    .all<DbNotificationRecord>();
+
+  return (result.results ?? []).map((row) => ({
+    id: row.id,
+    userId: row.user_id,
+    actorUserId: row.actor_user_id,
+    actorName: row.actor_name ?? null,
+    actorEmail: row.actor_email ?? null,
+    documentId: row.document_id,
+    documentTitle: row.document_title ?? null,
+    threadId: row.thread_id ?? null,
+    commentId: row.comment_id ?? null,
+    type: row.type === "mention" ? "mention" : "comment",
+    mentionToken: row.mention_token ?? null,
+    message: row.message,
+    readAt: row.read_at ?? null,
+    createdAt: row.created_at,
+  }));
+}
+
+export async function getUnreadNotificationCount(userId: string, env?: DbEnv): Promise<number> {
+  const db = getDB(env);
+
+  const row = await db
+    .prepare("SELECT COUNT(*) AS total FROM notifications WHERE user_id = ? AND read_at IS NULL")
+    .bind(userId)
+    .first<{ total: number }>();
+
+  return row?.total ?? 0;
+}
+
+export async function markNotificationRead(userId: string, notificationId: string, env?: DbEnv): Promise<void> {
+  const db = getDB(env);
+
+  await db
+    .prepare("UPDATE notifications SET read_at = ? WHERE id = ? AND user_id = ?")
+    .bind(Date.now(), notificationId, userId)
+    .run();
+}
+
+export async function markAllNotificationsRead(userId: string, env?: DbEnv): Promise<void> {
+  const db = getDB(env);
+
+  await db
+    .prepare("UPDATE notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL")
+    .bind(Date.now(), userId)
+    .run();
+}
+
 export async function getDocumentsByUser(
   userId: string,
   env?: DbEnv,
-): Promise<Array<{ id: string; user_id: string; title: string | null; content: string | null; visibility: DocumentVisibility; created_at: number; updated_at: number }>> {
+): Promise<Array<{ id: string; owner_id: string | null; title: string | null; content: string | null; visibility: DocumentVisibility; created_at: number; updated_at: number }>> {
   const db = getDB(env);
 
   const result = await db
-    .prepare("SELECT id, user_id, title, content, visibility, created_at, updated_at FROM documents WHERE user_id = ? ORDER BY updated_at DESC")
+    .prepare("SELECT id, owner_id, title, content, visibility, created_at, updated_at FROM documents WHERE owner_id = ? ORDER BY updated_at DESC")
     .bind(userId)
     .all<DbDocumentRecord>();
 
@@ -1015,15 +1506,15 @@ export async function getDocumentsByUser(
 export async function getAccessibleDocumentsByUser(
   userId: string,
   env?: DbEnv,
-): Promise<Array<{ id: string; user_id: string; title: string | null; content: string | null; visibility: DocumentVisibility; created_at: number; updated_at: number }>> {
+): Promise<Array<{ id: string; owner_id: string | null; title: string | null; content: string | null; visibility: DocumentVisibility; created_at: number; updated_at: number }>> {
   const db = getDB(env);
 
   const result = await db
     .prepare(
-      `SELECT DISTINCT d.id, d.user_id, d.title, d.content, d.visibility, d.created_at, d.updated_at
+      `SELECT DISTINCT d.id, d.owner_id, d.title, d.content, d.visibility, d.created_at, d.updated_at
       FROM documents d
       LEFT JOIN document_collaborators dc ON dc.document_id = d.id
-      WHERE d.user_id = ? OR dc.user_id = ?
+      WHERE d.owner_id = ? OR dc.user_id = ?
       ORDER BY d.updated_at DESC`,
     )
     .bind(userId, userId)
@@ -1038,11 +1529,11 @@ export async function getAccessibleDocumentsByUser(
 export async function getDocumentById(
   id: string,
   env?: DbEnv,
-): Promise<{ id: string; user_id: string; title: string | null; content: string | null; visibility: DocumentVisibility; created_at: number; updated_at: number } | null> {
+): Promise<{ id: string; owner_id: string | null; title: string | null; content: string | null; visibility: DocumentVisibility; github_repo: string | null; github_branch: string | null; github_path: string | null; last_github_sha: string | null; last_synced_at: number | null; created_at: number; updated_at: number } | null> {
   const db = getDB(env);
 
   const row = await db
-    .prepare("SELECT id, user_id, title, content, visibility, created_at, updated_at FROM documents WHERE id = ? LIMIT 1")
+    .prepare("SELECT id, owner_id, title, content, visibility, github_repo, github_branch, github_path, last_github_sha, last_synced_at, created_at, updated_at FROM documents WHERE id = ? LIMIT 1")
     .bind(id)
     .first<DbDocumentRecord>();
 
@@ -1053,7 +1544,45 @@ export async function getDocumentById(
   return {
     ...row,
     visibility: row.visibility === "public" ? "public" : "private",
+    github_repo: row.github_repo ?? null,
+    github_branch: row.github_branch ?? null,
+    github_path: row.github_path ?? null,
+    last_github_sha: row.last_github_sha ?? null,
+    last_synced_at: row.last_synced_at ?? null,
   };
+}
+
+export async function updateDocumentGitHubMapping(
+  id: string,
+  mapping: {
+    github_repo: string | null;
+    github_branch: string | null;
+    github_path: string | null;
+  },
+  env?: DbEnv,
+): Promise<void> {
+  const db = getDB(env);
+
+  await db
+    .prepare("UPDATE documents SET github_repo = ?, github_branch = ?, github_path = ?, last_github_sha = NULL, last_synced_at = NULL, updated_at = ? WHERE id = ?")
+    .bind(mapping.github_repo, mapping.github_branch, mapping.github_path, Date.now(), id)
+    .run();
+}
+
+export async function updateDocumentGitHubSyncState(
+  id: string,
+  input: {
+    lastGitHubSha: string | null;
+    lastSyncedAt: number | null;
+  },
+  env?: DbEnv,
+): Promise<void> {
+  const db = getDB(env);
+
+  await db
+    .prepare("UPDATE documents SET last_github_sha = ?, last_synced_at = ?, updated_at = ? WHERE id = ?")
+    .bind(input.lastGitHubSha, input.lastSyncedAt, Date.now(), id)
+    .run();
 }
 
 export async function updateDocument(
@@ -1089,8 +1618,162 @@ export async function updateDocument(
     .run();
 }
 
+export async function getLastVersion(
+  documentId: string,
+  env?: DbEnv,
+): Promise<{ id: string; documentId: string; content: string; title: string | null; type: string | null; label: string | null; createdAt: number; createdBy: string | null; versionNumber: number } | null> {
+  const db = getDB(env);
+
+  const result = await db
+    .prepare(
+      "SELECT id, document_id, content, title, type, label, created_at, created_by, version_number FROM document_versions WHERE document_id = ? ORDER BY version_number DESC LIMIT 1",
+    )
+    .bind(documentId)
+    .first<DbDocumentVersionRecord>();
+
+  if (!result) {
+    return null;
+  }
+
+  return {
+    id: result.id,
+    documentId: result.document_id,
+    content: result.content,
+    title: result.title,
+    type: result.type,
+    label: result.label,
+    createdAt: result.created_at,
+    createdBy: result.created_by,
+    versionNumber: result.version_number ?? 0,
+  };
+}
+
+export async function createDocumentVersion(
+  input: {
+    documentId: string;
+    content: string;
+    title?: string | null;
+    userId?: string | null;
+    type?: "auto" | "manual" | "restore";
+    label?: string | null;
+  },
+  env?: DbEnv,
+): Promise<{ id: string; documentId: string; content: string; title: string | null; type: string | null; label: string | null; createdAt: number; createdBy: string | null; versionNumber: number } | null> {
+  const db = getDB(env);
+  const createdAt = Date.now();
+  const versionType = input.type ?? "auto";
+  const versionLabel = input.label ?? null;
+
+  // Content-based deduplication: skip if last version has identical content
+  const lastVersion = await getLastVersion(input.documentId, env);
+  if (lastVersion && lastVersion.content === input.content) {
+    return null; // Skip duplicate version
+  }
+
+  const versionRow = await db
+    .prepare("SELECT COALESCE(MAX(version_number), 0) + 1 AS version_number FROM document_versions WHERE document_id = ?")
+    .bind(input.documentId)
+    .first<{ version_number: number }>();
+
+  const versionNumber = versionRow?.version_number ?? 1;
+  const id = crypto.randomUUID();
+
+  await db
+    .prepare(
+      "INSERT INTO document_versions (id, document_id, content, title, type, label, created_at, created_by, version_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    )
+    .bind(id, input.documentId, input.content, input.title ?? null, versionType, versionLabel, createdAt, input.userId ?? null, versionNumber)
+    .run();
+
+  return {
+    id,
+    documentId: input.documentId,
+    content: input.content,
+    title: input.title ?? null,
+    type: versionType,
+    label: versionLabel,
+    createdAt,
+    createdBy: input.userId ?? null,
+    versionNumber,
+  };
+}
+
+export async function getDocumentVersions(
+  documentId: string,
+  env?: DbEnv,
+): Promise<Array<{ id: string; documentId: string; content: string; title: string | null; type: string | null; label: string | null; createdAt: number; createdBy: string | null; versionNumber: number }>> {
+  const db = getDB(env);
+
+  const result = await db
+    .prepare(
+      "SELECT id, document_id, content, title, type, label, created_at, created_by, version_number FROM document_versions WHERE document_id = ? ORDER BY version_number DESC, created_at DESC",
+    )
+    .bind(documentId)
+    .all<DbDocumentVersionRecord>();
+
+  return (result.results ?? []).map((row) => ({
+    id: row.id,
+    documentId: row.document_id,
+    content: row.content,
+    title: row.title,
+    type: row.type,
+    label: row.label,
+    createdAt: row.created_at,
+    createdBy: row.created_by,
+    versionNumber: row.version_number ?? 0,
+  }));
+}
+
+export async function getVersionById(
+  versionId: string,
+  env?: DbEnv,
+): Promise<{ id: string; documentId: string; content: string; title: string | null; type: string | null; label: string | null; createdAt: number; createdBy: string | null; versionNumber: number } | null> {
+  const db = getDB(env);
+
+  const row = await db
+    .prepare("SELECT id, document_id, content, title, type, label, created_at, created_by, version_number FROM document_versions WHERE id = ? LIMIT 1")
+    .bind(versionId)
+    .first<DbDocumentVersionRecord>();
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    documentId: row.document_id,
+    content: row.content,
+    title: row.title,
+    type: row.type,
+    label: row.label,
+    createdAt: row.created_at,
+    createdBy: row.created_by,
+    versionNumber: row.version_number ?? 0,
+  };
+}
+
 export async function deleteDocument(id: string, env?: DbEnv): Promise<void> {
   const db = getDB(env);
+
+  await db
+    .prepare("DELETE FROM comments WHERE thread_id IN (SELECT id FROM comment_threads WHERE document_id = ?)")
+    .bind(id)
+    .run();
+
+  await db
+    .prepare("DELETE FROM comment_threads WHERE document_id = ?")
+    .bind(id)
+    .run();
+
+  await db
+    .prepare("DELETE FROM document_versions WHERE document_id = ?")
+    .bind(id)
+    .run();
+
+  await db
+    .prepare("DELETE FROM document_invitations WHERE document_id = ?")
+    .bind(id)
+    .run();
 
   await db
     .prepare("DELETE FROM document_collaborators WHERE document_id = ?")
@@ -1129,6 +1812,160 @@ export async function addCollaborator(
   };
 }
 
+export async function upsertDocumentInvitation(
+  input: {
+    documentId: string;
+    inviteeEmail: string;
+    invitedByUserId: string;
+    role: CollaboratorRole;
+    inviteeUserId?: string | null;
+    acceptedAt?: number | null;
+  },
+  env?: DbEnv,
+): Promise<{
+  id: string;
+  document_id: string;
+  invitee_email: string;
+  invitee_user_id: string | null;
+  invited_by_user_id: string;
+  role: CollaboratorRole;
+  accepted_at: number | null;
+  created_at: number;
+  updated_at: number;
+}> {
+  const db = getDB(env);
+  const now = Date.now();
+  const inviteeEmail = input.inviteeEmail.trim().toLowerCase();
+
+  const existing = await db
+    .prepare(
+      "SELECT id, document_id, invitee_email, invitee_user_id, invited_by_user_id, role, accepted_at, created_at, updated_at FROM document_invitations WHERE document_id = ? AND invitee_email = ? LIMIT 1",
+    )
+    .bind(input.documentId, inviteeEmail)
+    .first<DbDocumentInvitationRecord>();
+
+  if (existing) {
+    const acceptedAt = Object.prototype.hasOwnProperty.call(input, "acceptedAt")
+      ? (input.acceptedAt ?? null)
+      : existing.accepted_at;
+    const inviteeUserId = Object.prototype.hasOwnProperty.call(input, "inviteeUserId")
+      ? (input.inviteeUserId ?? null)
+      : existing.invitee_user_id;
+
+    await db
+      .prepare(
+        "UPDATE document_invitations SET invitee_user_id = ?, invited_by_user_id = ?, role = ?, accepted_at = ?, updated_at = ? WHERE id = ?",
+      )
+      .bind(
+        inviteeUserId,
+        input.invitedByUserId,
+        input.role,
+        acceptedAt,
+        now,
+        existing.id,
+      )
+      .run();
+
+    return {
+      id: existing.id,
+      document_id: existing.document_id,
+      invitee_email: existing.invitee_email,
+      invitee_user_id: inviteeUserId,
+      invited_by_user_id: input.invitedByUserId,
+      role: input.role,
+      accepted_at: acceptedAt,
+      created_at: existing.created_at,
+      updated_at: now,
+    };
+  }
+
+  const id = crypto.randomUUID();
+  const acceptedAt = input.acceptedAt ?? null;
+  const inviteeUserId = input.inviteeUserId ?? null;
+
+  await db
+    .prepare(
+      "INSERT INTO document_invitations (id, document_id, invitee_email, invitee_user_id, invited_by_user_id, role, accepted_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    )
+    .bind(
+      id,
+      input.documentId,
+      inviteeEmail,
+      inviteeUserId,
+      input.invitedByUserId,
+      input.role,
+      acceptedAt,
+      now,
+      now,
+    )
+    .run();
+
+  return {
+    id,
+    document_id: input.documentId,
+    invitee_email: inviteeEmail,
+    invitee_user_id: inviteeUserId,
+    invited_by_user_id: input.invitedByUserId,
+    role: input.role,
+    accepted_at: acceptedAt,
+    created_at: now,
+    updated_at: now,
+  };
+}
+
+export async function acceptPendingDocumentInvitationsForUser(
+  userId: string,
+  email: string | null,
+  env?: DbEnv,
+): Promise<number> {
+  const normalizedEmail = email?.trim().toLowerCase();
+  if (!normalizedEmail) {
+    return 0;
+  }
+
+  const db = getDB(env);
+  const pending = await db
+    .prepare(
+      "SELECT id, document_id, invitee_email, invitee_user_id, invited_by_user_id, role, accepted_at, created_at, updated_at FROM document_invitations WHERE invitee_email = ? AND accepted_at IS NULL ORDER BY created_at ASC",
+    )
+    .bind(normalizedEmail)
+    .all<DbDocumentInvitationRecord>();
+
+  const rows = pending.results ?? [];
+  if (rows.length === 0) {
+    return 0;
+  }
+
+  const acceptedAt = Date.now();
+
+  for (const invitation of rows) {
+    const document = await getDocumentById(invitation.document_id, env);
+    if (!document) {
+      continue;
+    }
+
+    const existingAccess = await getUserAccess(invitation.document_id, userId, env);
+
+    if (!existingAccess) {
+      await addCollaborator(
+        invitation.document_id,
+        userId,
+        invitation.role === "editor" ? "editor" : "viewer",
+        env,
+      );
+    }
+
+    await db
+      .prepare(
+        "UPDATE document_invitations SET invitee_user_id = ?, accepted_at = ?, updated_at = ? WHERE id = ?",
+      )
+      .bind(userId, acceptedAt, Date.now(), invitation.id)
+      .run();
+  }
+
+  return rows.length;
+}
+
 export async function getCollaborators(
   documentId: string,
   env?: DbEnv,
@@ -1156,12 +1993,84 @@ export async function getCollaborators(
   }));
 }
 
+export async function getCollaborator(
+  documentId: string,
+  userId: string,
+  env?: DbEnv,
+): Promise<{ id: string; document_id: string; user_id: string; role: CollaboratorRole; created_at: number } | null> {
+  const db = getDB(env);
+
+  const row = await db
+    .prepare("SELECT id, document_id, user_id, role, created_at FROM document_collaborators WHERE document_id = ? AND user_id = ? LIMIT 1")
+    .bind(documentId, userId)
+    .first<DbDocumentCollaboratorRecord>();
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    document_id: row.document_id,
+    user_id: row.user_id,
+    role: row.role === "editor" ? "editor" : "viewer",
+    created_at: row.created_at,
+  };
+}
+
 export async function removeCollaborator(documentId: string, userId: string, env?: DbEnv): Promise<void> {
   const db = getDB(env);
 
   await db
     .prepare("DELETE FROM document_collaborators WHERE document_id = ? AND user_id = ?")
     .bind(documentId, userId)
+    .run();
+}
+
+export async function updateCollaboratorRole(
+  documentId: string,
+  userId: string,
+  newRole: CollaboratorRole,
+  env?: DbEnv,
+): Promise<{ id: string; document_id: string; user_id: string; role: CollaboratorRole; created_at: number } | null> {
+  const db = getDB(env);
+
+  const existing = await getCollaborator(documentId, userId, env);
+  if (!existing) {
+    return null;
+  }
+
+  await db
+    .prepare("UPDATE document_collaborators SET role = ? WHERE document_id = ? AND user_id = ?")
+    .bind(newRole, documentId, userId)
+    .run();
+
+  return {
+    id: existing.id,
+    document_id: existing.document_id,
+    user_id: existing.user_id,
+    role: newRole,
+    created_at: existing.created_at,
+  };
+}
+
+export async function transferDocumentOwnership(
+  documentId: string,
+  newOwnerId: string,
+  env?: DbEnv,
+): Promise<void> {
+  const db = getDB(env);
+
+  // Check if new owner is a collaborator and remove them from collaborators
+  await db
+    .prepare("DELETE FROM document_collaborators WHERE document_id = ? AND user_id = ?")
+    .bind(documentId, newOwnerId)
+    .run();
+
+  // Update owner
+  await db
+    .prepare("UPDATE documents SET owner_id = ?, updated_at = ? WHERE id = ?")
+    .bind(newOwnerId, Date.now(), documentId)
     .run();
 }
 
@@ -1229,19 +2138,15 @@ export async function getUserAccess(
     return null;
   }
 
-  if (document.user_id === userId) {
+  if (document.owner_id === userId) {
     return "owner";
   }
 
-  const db = getDB(env);
-  const row = await db
-    .prepare("SELECT id, document_id, user_id, role, created_at FROM document_collaborators WHERE document_id = ? AND user_id = ? LIMIT 1")
-    .bind(documentId, userId)
-    .first<DbDocumentCollaboratorRecord>();
+  const collaborator = await getCollaborator(documentId, userId, env);
 
-  if (!row) {
+  if (!collaborator) {
     return null;
   }
 
-  return row.role === "editor" ? "editor" : "viewer";
+  return collaborator.role === "editor" ? "editor" : "viewer";
 }

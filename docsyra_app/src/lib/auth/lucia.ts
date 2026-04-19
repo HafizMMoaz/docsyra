@@ -12,6 +12,7 @@ import {
 
 type DatabaseUserAttributes = {
   email: string | null;
+  email_verified: boolean;
   name: string | null;
   avatar_url: string | null;
   status: string | null;
@@ -79,6 +80,7 @@ export function createLucia(env?: DbEnv): DocsyraAuth {
     getSessionAttributes: () => ({}),
     getUserAttributes: (attributes) => ({
       email: attributes.email,
+      email_verified: attributes.email_verified,
       name: attributes.name,
       avatar_url: attributes.avatar_url,
       status: attributes.status,
@@ -107,6 +109,7 @@ declare module "lucia" {
     Lucia: DocsyraAuth;
     DatabaseUserAttributes: {
       email: string | null;
+      email_verified: boolean;
       name: string | null;
       avatar_url: string | null;
       status: string | null;

@@ -1,7 +1,8 @@
 import { createLucia } from "@/lib/auth";
 import { readSessionIdFromRequest } from "@/lib/auth/lucia";
-import { verifyTotpToken } from "@/lib/auth/two-factor";
+import { decryptSecret, verifyTotpToken } from "@/lib/auth/two-factor";
 import { getEnv } from "@/lib/cloudflare/route-context";
+import { rejectCsrf } from "@/lib/security/csrf";
 import {
   deleteBackupCodesByUser,
   getUserTwoFactorSettings,
@@ -19,6 +20,11 @@ export async function POST(
   request: Request,
   context: { params: Promise<Record<string, string | string[] | undefined>> },
 ): Promise<Response> {
+  const csrfError = await rejectCsrf(request);
+  if (csrfError) {
+    return csrfError;
+  }
+
   let body: Body;
   try {
     body = (await request.json()) as Body;
@@ -49,7 +55,8 @@ export async function POST(
     return Response.json({ success: false, error: "2FA is not enabled" }, { status: 400 });
   }
 
-  const valid = await verifyTotpToken(twoFactor.secret, code);
+  const decrypted = await decryptSecret(twoFactor.secret);
+  const valid = await verifyTotpToken(decrypted, code);
   if (!valid) {
     return Response.json({ success: false, error: "Invalid code" }, { status: 400 });
   }

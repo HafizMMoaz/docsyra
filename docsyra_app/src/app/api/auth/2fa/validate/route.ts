@@ -1,11 +1,13 @@
 import { createSession } from "@/lib/auth";
 import {
   clearTwoFactorChallengeCookie,
+  decryptSecret,
   hashTwoFactorValue,
   readTwoFactorChallenge,
   verifyTotpToken,
 } from "@/lib/auth/two-factor";
 import { getEnv } from "@/lib/cloudflare/route-context";
+import { rejectCsrf } from "@/lib/security/csrf";
 import {
   consumeBackupCode,
   getUserTwoFactorSettings,
@@ -21,6 +23,11 @@ export async function POST(
   request: Request,
   context: { params: Promise<Record<string, string | string[] | undefined>> },
 ): Promise<Response> {
+  const csrfError = await rejectCsrf(request);
+  if (csrfError) {
+    return csrfError;
+  }
+
   let body: Body;
   try {
     body = (await request.json()) as Body;
@@ -45,7 +52,8 @@ export async function POST(
     return Response.json({ success: false, error: "2FA is not enabled" }, { status: 400 });
   }
 
-  const totpValid = /^\d{6}$/.test(code) ? await verifyTotpToken(twoFactor.secret, code) : false;
+  const decrypted = await decryptSecret(twoFactor.secret);
+  const totpValid = /^\d{6}$/.test(code) ? await verifyTotpToken(decrypted, code) : false;
   let backupValid = false;
 
   if (!totpValid) {

@@ -1,5 +1,7 @@
 import { getOtpExpiry, generateOtpCode, hashOtpCode } from "@/lib/auth/otp";
 import { getEnv } from "@/lib/cloudflare/route-context";
+import { rejectCsrf } from "@/lib/security/csrf";
+import { rateLimit } from "@/lib/security/rate-limit";
 import {
   checkAndIncrementRateLimit,
   createEmailOtpCode,
@@ -36,6 +38,21 @@ export async function POST(
   request: Request,
   context: { params: Promise<Record<string, string | string[] | undefined>> },
 ): Promise<Response> {
+  try {
+    await rateLimit(request, null, {
+      limit: 3,
+      windowMs: 60_000,
+      route: "send-otp",
+    });
+  } catch {
+    return Response.json({ success: false, error: "Too many requests. Try again later." }, { status: 429 });
+  }
+
+  const csrfError = await rejectCsrf(request);
+  if (csrfError) {
+    return csrfError;
+  }
+
   let body: Body;
   try {
     body = (await request.json()) as Body;

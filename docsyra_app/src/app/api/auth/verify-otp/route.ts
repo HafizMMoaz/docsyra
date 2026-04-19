@@ -2,6 +2,8 @@ import { createSession } from "@/lib/auth";
 import { hashOtpCode } from "@/lib/auth/otp";
 import { createTwoFactorChallengeCookie } from "@/lib/auth/two-factor";
 import { getEnv } from "@/lib/cloudflare/route-context";
+import { rejectCsrf, setCsrfCookie } from "@/lib/security/csrf";
+import { rateLimit } from "@/lib/security/rate-limit";
 import {
   createUser,
   deleteEmailOtpCodeById,
@@ -29,6 +31,21 @@ export async function POST(
   request: Request,
   context: { params: Promise<Record<string, string | string[] | undefined>> },
 ): Promise<Response> {
+  try {
+    await rateLimit(request, null, {
+      limit: 5,
+      windowMs: 60_000,
+      route: "verify-otp",
+    });
+  } catch {
+    return Response.json({ success: false, error: "Too many requests. Try again later." }, { status: 429 });
+  }
+
+  const csrfError = await rejectCsrf(request);
+  if (csrfError) {
+    return csrfError;
+  }
+
   let body: Body;
   try {
     body = (await request.json()) as Body;
@@ -73,6 +90,7 @@ export async function POST(
   if (twoFactor?.enabled) {
     const headers = new Headers();
     headers.append("Set-Cookie", createTwoFactorChallengeCookie(user.id));
+    setCsrfCookie();
 
     return Response.json({ success: true, requiresTwoFactor: true }, { status: 200, headers });
   }
@@ -80,6 +98,7 @@ export async function POST(
   const sessionResult = await createSession(user.id, env, request);
   const headers = new Headers();
   headers.set("Set-Cookie", sessionResult.setCookie);
+  setCsrfCookie();
 
   return Response.json(
     {

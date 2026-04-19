@@ -1,0 +1,32 @@
+# Workspace-wide ignores
+
+# OS files
+**/.DS_Store
+**/Thumbs.db
+
+# Logs
+**/*.log
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+
+# Dependencies
+**/node_modules/
+
+# Build output
+**/.next/
+**/out/
+**/dist/
+**/build/
+**/.wrangler/
+**/.vercel/
+**/.turbo/
+**/*.tsbuildinfo
+
+# Environment files
+**/.env
+**/.env.*
+!**/.env.example
+**/.dev.vars
+**/.dev.vars*

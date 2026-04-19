@@ -1,4 +1,5 @@
 import { canEditDocument, requireDocumentAccess } from "@/lib/docs/access";
+import { getUserById } from "@/lib/db/queries";
 import { getRequestContext } from "@cloudflare/next-on-pages";
 
 export const runtime = "edge";
@@ -33,6 +34,13 @@ export async function GET(
   headers.set("x-docsyra-can-edit", canEditDocument(access.accessRole) ? "1" : "0");
   headers.set("x-docsyra-user-id", access.userId ?? "");
   headers.set("x-docsyra-document-id", id);
+
+  if (access.userId) {
+    const user = await getUserById(access.userId, access.env);
+    headers.set("x-docsyra-user-name", user?.attributes.name ?? "");
+    headers.set("x-docsyra-user-email", user?.attributes.email ?? "");
+    headers.set("x-docsyra-user-avatar", user?.attributes.avatar_url ?? "");
+  }
 
   const authorizedRequest = new Request(request, { headers });
 

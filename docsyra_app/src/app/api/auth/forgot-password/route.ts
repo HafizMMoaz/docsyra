@@ -1,5 +1,6 @@
 import { createExpiry, createSecureToken } from "@/lib/auth/tokens";
 import { getEnv } from "@/lib/cloudflare/route-context";
+import { rejectCsrf } from "@/lib/security/csrf";
 import {
   createPasswordResetToken,
   deletePasswordResetTokensByUser,
@@ -22,6 +23,11 @@ export async function POST(
   request: Request,
   context: { params: Promise<Record<string, string | string[] | undefined>> },
 ): Promise<Response> {
+  const csrfError = await rejectCsrf(request);
+  if (csrfError) {
+    return csrfError;
+  }
+
   let body: Body;
   try {
     body = (await request.json()) as Body;

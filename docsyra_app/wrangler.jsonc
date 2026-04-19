@@ -15,13 +15,15 @@
 	},
 	"vars": {
 		"ENV_NAME": "local",
-		"TWO_FACTOR_SECRET_KEY": "docsyra-local-two-factor-secret-key",
+		"NEXT_PUBLIC_APP_URL": "http://localhost:3000",
+		"NEXT_PUBLIC_R2_BASE_URL": "https://assets.docsyra.app",
 		"NEXT_PUBLIC_COLLAB_WS_BASE_URL": "wss://docsyra-collab.hafizmmoaz.workers.dev",
 		"GOOGLE_CLIENT_ID": "20679416807-1261uspg6gmve8tt9m21eqd18dcghol2.apps.googleusercontent.com",
-		"GOOGLE_CLIENT_SECRET": "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",
 		"GITHUB_CLIENT_ID": "Ov23liUJ1IQ3Wh21gGnu",
-		"GITHUB_CLIENT_SECRET": "dbe5b8d5ef7c7d1862bd5b439178640dea36901b",
-		"RESEND_API_KEY": "re_WWP3u7fN_7Yk8nLSfYV5QqwN23FwjxEHE"
+		"PASSKEY_RP_ID": "localhost",
+		"PASSKEY_ORIGIN": "http://localhost:3000",
+		"PASSKEY_RP_NAME": "Docsyra",
+		"BASE_URL": "https://docsyra.app"
 	},
 	"env": {
 		"production": {
@@ -35,13 +37,14 @@
 			],
 			"vars": {
 				"ENV_NAME": "production",
-				"TWO_FACTOR_SECRET_KEY": "docsyra-prod-two-factor-secret-key",
+				"NEXT_PUBLIC_APP_URL": "https://docsyra.com",
+				"NEXT_PUBLIC_R2_BASE_URL": "https://assets.docsyra.app",
 				"NEXT_PUBLIC_COLLAB_WS_BASE_URL": "wss://docsyra-collab.hafizmmoaz.workers.dev",
 				"GOOGLE_CLIENT_ID": "20679416807-1261uspg6gmve8tt9m21eqd18dcghol2.apps.googleusercontent.com",
-				"GOOGLE_CLIENT_SECRET": "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",
 				"GITHUB_CLIENT_ID": "Ov23liUlceVJbHP788uO",
-				"GITHUB_CLIENT_SECRET": "3f62d3ce6e3d0682c0b3ca75e6caf9b6fc0a0dd2",
-				"RESEND_API_KEY": "re_WWP3u7fN_7Yk8nLSfYV5QqwN23FwjxEHE"
+				"PASSKEY_RP_ID": "docsyra.app",
+				"PASSKEY_ORIGIN": "https://docsyra.app",
+				"PASSKEY_RP_NAME": "Docsyra"
 			}
 		},
 		"preview": {
@@ -55,13 +58,14 @@
 			],
 			"vars": {
 				"ENV_NAME": "preview",
-				"TWO_FACTOR_SECRET_KEY": "docsyra-preview-two-factor-secret-key",
+				"NEXT_PUBLIC_APP_URL": "https://preview.docsyra.com",
+				"NEXT_PUBLIC_R2_BASE_URL": "https://assets.docsyra.app",
 				"NEXT_PUBLIC_COLLAB_WS_BASE_URL": "wss://docsyra-collab.hafizmmoaz.workers.dev",
 				"GOOGLE_CLIENT_ID": "20679416807-1261uspg6gmve8tt9m21eqd18dcghol2.apps.googleusercontent.com",
-				"GOOGLE_CLIENT_SECRET": "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",
 				"GITHUB_CLIENT_ID": "Ov23liUlceVJbHP788uO",
-				"GITHUB_CLIENT_SECRET": "3f62d3ce6e3d0682c0b3ca75e6caf9b6fc0a0dd2",
-				"RESEND_API_KEY": "re_WWP3u7fN_7Yk8nLSfYV5QqwN23FwjxEHE"
+				"PASSKEY_RP_ID": "preview.docsyra.com",
+				"PASSKEY_ORIGIN": "https://preview.docsyra.com",
+				"PASSKEY_RP_NAME": "Docsyra"
 			}
 		}
 	},
@@ -70,6 +74,12 @@
 			"binding": "DB",
 			"database_name": "docsyra-db",
 			"database_id": "1139630c-8b1e-440e-9b42-58b2ae1d4d03"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "R2",
+			"bucket_name": "docsyra-assets"
 		}
 	]
 }
