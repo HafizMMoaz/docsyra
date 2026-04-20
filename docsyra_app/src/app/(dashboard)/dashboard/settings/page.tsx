@@ -62,6 +62,7 @@ export default function SettingsPage() {
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; tone: "success" | "error" } | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [socialAccounts, setSocialAccounts] = useState<SocialAccount[]>([
     { provider: "google", connected: false, email: null, avatar_url: null },
@@ -85,6 +86,27 @@ export default function SettingsPage() {
   const [industry, setIndustry] = useState("");
   const [industryOther, setIndustryOther] = useState("");
   const [country, setCountry] = useState("");
+
+  useEffect(() => {
+    const message = error ?? success;
+
+    if (!message) {
+      return;
+    }
+
+    setToast({
+      message,
+      tone: error ? "error" : "success",
+    });
+
+    const timeout = window.setTimeout(() => {
+      setToast(null);
+    }, 4000);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [error, success]);
 
   useEffect(() => {
     let mounted = true;
@@ -646,6 +668,27 @@ export default function SettingsPage() {
 
   return (
     <section className="space-y-8">
+      {toast ? (
+        <div className="fixed right-4 top-4 z-50 w-[min(24rem,calc(100vw-2rem))] rounded-xl border border-black/10 bg-white px-4 py-3 shadow-[0_20px_50px_rgba(15,23,42,0.14)]">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className={`text-sm font-medium ${toast.tone === "error" ? "text-rose-600" : "text-emerald-700"}`}>
+                {toast.tone === "error" ? "Something went wrong" : "Saved"}
+              </p>
+              <p className="mt-1 text-sm text-slate-600">{toast.message}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setToast(null)}
+              className="rounded-md px-2 py-1 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+              aria-label="Dismiss notification"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
         <p className="mt-1 text-sm text-slate-500">Manage your profile and account actions.</p>
@@ -768,9 +811,6 @@ export default function SettingsPage() {
               ))}
             </datalist>
           </div>
-
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
-          {success ? <p className="text-sm text-emerald-700">{success}</p> : null}
 
           <button
             type="submit"

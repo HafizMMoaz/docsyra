@@ -271,6 +271,7 @@ export default function EditorPage() {
   const [githubBranch, setGitHubBranch] = useState<string | null>(null);
   const [githubPath, setGitHubPath] = useState<string | null>(null);
   const [githubModalOpen, setGitHubModalOpen] = useState(false);
+  const [githubAccountConnected, setGitHubAccountConnected] = useState(false);
   const [githubRepoOptions, setGitHubRepoOptions] = useState<GitHubRepoOption[]>([]);
   const [githubSelectedRepo, setGitHubSelectedRepo] = useState("");
   const [githubSelectedBranch, setGitHubSelectedBranch] = useState("main");
@@ -286,6 +287,7 @@ export default function EditorPage() {
   const [githubPreviewDiff, setGitHubPreviewDiff] = useState<DocumentDiffChange[]>([]);
   const [githubPreviewReady, setGitHubPreviewReady] = useState(false);
   const [githubPulling, setGitHubPulling] = useState(false);
+  const githubLinked = Boolean(githubRepo && githubPath);
   const [shareOpen, setShareOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"viewer" | "editor">("viewer");
@@ -1617,6 +1619,7 @@ export default function EditorPage() {
       };
 
       if (!response.ok || !data.success) {
+        setGitHubAccountConnected(false);
         setGitHubError(data.error ?? "Failed to load GitHub repositories");
         return;
       }
@@ -1624,6 +1627,7 @@ export default function EditorPage() {
       const repos = Array.isArray(data.repos) ? data.repos : [];
       const mapping = data.mapping;
 
+      setGitHubAccountConnected(true);
       setGitHubRepoOptions(repos);
       setGitHubSelectedRepo(mapping?.github_repo ?? githubRepo ?? repos[0]?.full_name ?? "");
       setGitHubSelectedBranch(mapping?.github_branch ?? githubBranch ?? repos[0]?.default_branch ?? "main");
@@ -1727,6 +1731,7 @@ export default function EditorPage() {
         return;
       }
 
+      setGitHubAccountConnected(true);
       setGitHubRepo(data.mapping?.github_repo ?? repo);
       setGitHubBranch(data.mapping?.github_branch ?? branch);
       setGitHubPath(data.mapping?.github_path ?? path);
@@ -1945,11 +1950,16 @@ export default function EditorPage() {
               </div>
             ) : null}
 
-            {githubRepo ? (
-              <span className={`rounded-full px-2 py-1 text-xs font-semibold ${formatGitHubSyncBadge(githubSyncStatus).classes}`}>
-                {githubSyncStatusLoading ? "Checking GitHub..." : formatGitHubSyncBadge(githubSyncStatus).label}
-              </span>
-            ) : null}
+            <div className="flex flex-col gap-1">
+              {githubRepo ? (
+                <span className={`rounded-full px-2 py-1 text-xs font-semibold ${formatGitHubSyncBadge(githubSyncStatus).classes}`}>
+                  {githubSyncStatusLoading ? "Checking GitHub..." : formatGitHubSyncBadge(githubSyncStatus).label}
+                </span>
+              ) : null}
+              {githubAccountConnected && !githubLinked ? (
+                <p className="text-[11px] leading-tight text-slate-500">GitHub account connected, document not linked yet</p>
+              ) : null}
+            </div>
             <div className="relative">
               <button
                 type="button"
@@ -2056,7 +2066,7 @@ export default function EditorPage() {
                 }}
                 className="rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
               >
-                Connect GitHub
+                {githubLinked ? "Manage GitHub link" : "Link GitHub repo"}
               </button>
             ) : null}
             {accessRole === "owner" ? (
@@ -2577,8 +2587,12 @@ export default function EditorPage() {
           <div className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-4 shadow-xl md:p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Connect GitHub</h2>
-                <p className="text-sm text-slate-500">Link this document to a GitHub repository path.</p>
+                <h2 className="text-lg font-semibold text-slate-900">{githubLinked ? "Manage GitHub link" : "Link GitHub repo"}</h2>
+                <p className="text-sm text-slate-500">
+                  {githubLinked
+                    ? "Update the repository, branch, or path used for document sync."
+                    : "Choose a GitHub repository and path to sync this document."}
+                </p>
               </div>
               <button
                 type="button"
