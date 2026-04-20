@@ -1889,7 +1889,7 @@ export default function EditorPage() {
 
   return (
     <main className="min-h-screen bg-[#f7f6f3] text-slate-900">
-      <div className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col">
+      <div className="mx-auto flex min-h-screen w-full flex-col">
         <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-black/5 bg-white/85 px-4 py-3 backdrop-blur md:px-6">
           <input
             type="text"

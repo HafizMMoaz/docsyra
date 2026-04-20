@@ -44,10 +44,7 @@ body {
 .ProseMirror {
   margin: 0 auto;
   min-height: 70vh;
-  max-width: 800px;
-  padding: 48px 24px 72px;
-  font-size: 16px;
-  line-height: 1.7;
+    max-width: 1200px;
   outline: none;
 }
 
@@ -458,9 +455,7 @@ pre {
 
 .empty-doc-hint {
   margin: 8px auto 0;
-  max-width: 800px;
-  color: #94a3b8;
-  font-size: 14px;
+    max-width: 1200px;
   padding: 0 24px;
 }
 

@@ -5,6 +5,7 @@ import { Suspense, type FormEvent, type MouseEventHandler, useEffect, useState }
 import { getSession } from "@/lib/auth/session-client";
 import { parseRequestOptionsFromJSON, type RequestOptionsJSON } from "@/lib/auth/passkey-client";
 import { getCsrfToken } from "@/lib/security/csrf-client";
+import { FaGoogle, FaGithub, FaKey, FaLock, FaEnvelope } from "react-icons/fa";
 
 type PublicKeyCredentialWithJSON = PublicKeyCredential & {
   toJSON?: () => unknown;
@@ -433,25 +434,28 @@ function LoginPageContent() {
             <button
               type="button"
               onClick={handleGoogleClick}
-              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
+              <FaGoogle className="h-4 w-4" />
               Continue with Google
             </button>
 
             <button
               type="button"
               onClick={handleGithubClick}
-              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
+              <FaGithub className="h-4 w-4" />
               Continue with GitHub
             </button>
 
             <button
               type="button"
               onClick={handlePasskeyLogin}
-              className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
               disabled={passkeyLoading || loading || twoFactorRequired}
             >
+              <FaKey className="h-4 w-4" />
               {passkeyLoading ? "Checking passkey..." : "Sign in with Passkey"}
             </button>
           </div>
@@ -462,7 +466,7 @@ function LoginPageContent() {
             <div className="h-px flex-1 bg-slate-200" />
           </div>
 
-          <div className="mb-3 flex items-center gap-2">
+          <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
             <button
               type="button"
               onClick={() => {
@@ -472,10 +476,11 @@ function LoginPageContent() {
                 setError(null);
                 setMessage(null);
               }}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium ${authMode === "password" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}
+              className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition ${authMode === "password" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
               disabled={loading}
             >
-              Password
+              <FaLock className="h-3 w-3" />
+              Login with Password
             </button>
             <button
               type="button"
@@ -487,10 +492,11 @@ function LoginPageContent() {
                 setError(null);
                 setMessage(null);
               }}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium ${authMode === "otp" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}
+              className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition ${authMode === "otp" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
               disabled={loading}
             >
-              Continue with Email OTP
+              <FaEnvelope className="h-3 w-3" />
+              Login with Email OTP
             </button>
           </div>
 
