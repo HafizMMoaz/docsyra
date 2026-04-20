@@ -88,6 +88,11 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const docId = url.searchParams.get("id");
+    const status = url.searchParams.get("status");
+
+    if (status === "ping") {
+      return new Response("Working");
+    }
 
     if (!docId) {
       return new Response("Missing doc id", { status: 400 });
