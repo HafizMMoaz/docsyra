@@ -570,6 +570,7 @@ export default function EditorPage() {
     const awareness = new Awareness(doc);
     yDocRef.current = doc;
     awarenessRef.current = awareness;
+
     setCollabDoc(doc);
     setCollabAwareness(awareness);
 
@@ -1168,9 +1169,9 @@ export default function EditorPage() {
         current.map((item) =>
           item.id === notificationId
             ? {
-                ...item,
-                read_at: Date.now(),
-              }
+              ...item,
+              read_at: Date.now(),
+            }
             : item,
         ),
       );
@@ -1420,9 +1421,9 @@ export default function EditorPage() {
         current.map((thread) =>
           thread.id === threadId
             ? {
-                ...thread,
-                resolved,
-              }
+              ...thread,
+              resolved,
+            }
             : thread,
         ),
       );
@@ -1986,7 +1987,7 @@ export default function EditorPage() {
                   className="absolute right-0 z-50 mt-2 w-96 rounded-2xl border border-black/10 bg-white p-3 shadow-[0_24px_60px_rgba(15,23,42,0.12)]"
                   onClick={(event) => event.stopPropagation()}
                 >
-                    <div className="mb-2 flex items-center justify-between gap-2 border-b border-black/5 pb-2">
+                  <div className="mb-2 flex items-center justify-between gap-2 border-b border-black/5 pb-2">
                     <h3 className="text-sm font-semibold text-slate-900">Notifications</h3>
                     <div className="flex items-center gap-2">
                       <button
@@ -2028,7 +2029,7 @@ export default function EditorPage() {
                             openThread(notification.thread_id);
                           }
                         }}
-                          className={`w-full rounded-xl border px-2 py-2 text-left transition hover:bg-slate-50 ${notification.read_at ? "border-black/10 bg-white" : "border-sky-200 bg-sky-50"}`}
+                        className={`w-full rounded-xl border px-2 py-2 text-left transition hover:bg-slate-50 ${notification.read_at ? "border-black/10 bg-white" : "border-sky-200 bg-sky-50"}`}
                       >
                         <div className="mb-1 flex items-center justify-between gap-2">
                           <p className="text-xs font-semibold text-slate-700">{notification.type === "mention" ? "Mention" : "Comment"}</p>
@@ -2219,13 +2220,13 @@ export default function EditorPage() {
                 collaboration={
                   collabDoc && collabAwareness && currentUser
                     ? {
-                        doc: collabDoc,
-                        awareness: collabAwareness,
-                        user: {
-                          name: getDisplayName(currentUser),
-                          color: colorFromKey(currentUser.id),
-                        },
-                      }
+                      doc: collabDoc,
+                      awareness: collabAwareness,
+                      user: {
+                        name: getDisplayName(currentUser),
+                        color: colorFromKey(currentUser.id),
+                      },
+                    }
                     : undefined
                 }
               />

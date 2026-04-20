@@ -13,7 +13,7 @@ export async function GET(
   const github = createGitHubOAuth(env, origin);
   const state = createOAuthState();
 
-  const authorizationUrl = github.createAuthorizationURL(state, ["read:user", "user:email"]);
+  const authorizationUrl = github.createAuthorizationURL(state, ["repo", "read:user", "user:email"]);
 
   const headers = new Headers({
     Location: authorizationUrl.toString(),

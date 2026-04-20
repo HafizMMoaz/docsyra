@@ -133,6 +133,11 @@ export async function GET(
   }
 
   const repos = (await reposResponse.json()) as GitHubRepoItem[];
+  if (!Array.isArray(repos)) {
+    console.error("GitHub API response is not an array:", repos);
+    return Response.json({ success: false, error: "Invalid response from GitHub" }, { status: 502 });
+  }
+
   const document = await getDocumentById(id, access.env);
 
   return Response.json(
