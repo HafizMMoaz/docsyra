@@ -13,6 +13,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "y-protocols": "^1.0.6",
     "yjs": "^13.6.30"
   },
   "devDependencies": {
