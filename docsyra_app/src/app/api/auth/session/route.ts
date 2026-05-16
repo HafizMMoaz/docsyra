@@ -13,7 +13,7 @@ export async function GET(
   const lucia = createLucia(env);
   const sessionId = readSessionIdFromRequest(request, env);
 
-  setCsrfCookie();
+  await setCsrfCookie();
 
   if (!sessionId) {
     return Response.json({ user: null }, { status: 200 });

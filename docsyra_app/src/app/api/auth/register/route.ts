@@ -119,7 +119,7 @@ export async function POST(
 
     const headers = new Headers();
     setSessionCookie(headers, session.id, env);
-    setCsrfCookie();
+    await setCsrfCookie();
 
     return Response.json(
       {

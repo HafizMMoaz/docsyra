@@ -98,7 +98,7 @@ export async function POST(
     if (twoFactor?.enabled) {
       const headers = new Headers();
       headers.append("Set-Cookie", createTwoFactorChallengeCookie(user.id));
-      setCsrfCookie();
+      await setCsrfCookie();
 
       return Response.json({ success: true, requiresTwoFactor: true }, { status: 200, headers });
     }
@@ -116,7 +116,7 @@ export async function POST(
 
     const headers = new Headers();
     setSessionCookie(headers, session.id, env);
-    setCsrfCookie();
+    await setCsrfCookie();
 
     return Response.json(
       {
