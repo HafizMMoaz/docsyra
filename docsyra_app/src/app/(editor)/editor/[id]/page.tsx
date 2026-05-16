@@ -1986,7 +1986,7 @@ export default function EditorPage() {
               <div className="flex items-center gap-1" title={`${participantCount} participants in this document`}>
                 {currentUser ? (
                   <div
-                    className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-paper-card text-xs font-semibold text-white shadow-sm"
+                    className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-paper-raised text-xs font-semibold text-white"
                     style={{ backgroundColor: colorFromKey(currentUser.id) }}
                     aria-label="You"
                   >
@@ -2001,7 +2001,7 @@ export default function EditorPage() {
                     <button
                       type="button"
                       key={`header-${peer.connectionId}`}
-                      className={`-ml-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-paper-card text-xs font-semibold text-white shadow-sm first:ml-0 ${highlightedPresenceId === focusId ? "ring-2 ring-clay" : ""}`}
+                      className={`-ml-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-paper-raised text-xs font-semibold text-white transition first:ml-0 ${highlightedPresenceId === focusId ? "ring-2 ring-clay" : ""}`}
                       style={{ backgroundColor: peer.color }}
                       aria-label={label}
                       onMouseEnter={() => setHighlightedPresenceId(focusId)}
@@ -2024,7 +2024,7 @@ export default function EditorPage() {
                   );
                 })}
                 {overflowPresenceCount > 0 ? (
-                  <div className="-ml-1 flex h-8 min-w-8 items-center justify-center rounded-full border-2 border-paper-card bg-ink px-1.5 text-xs font-semibold text-paper shadow-sm">
+                  <div className="-ml-1 flex h-8 min-w-8 items-center justify-center rounded-full border-2 border-paper-raised bg-ink px-1.5 text-xs font-semibold text-paper">
                     +{overflowPresenceCount}
                   </div>
                 ) : null}
@@ -2064,61 +2064,66 @@ export default function EditorPage() {
 
               {notificationsOpen ? (
                 <div
-                  className="absolute right-0 z-50 mt-2 w-96 rounded-sm border border-rule-strong bg-paper-card p-3 shadow-[0_28px_64px_-24px_rgba(33,28,22,0.45)]"
+                  className="absolute right-0 z-50 mt-2 w-96 rounded-sm border border-rule bg-paper-card shadow-lg"
                   onClick={(event) => event.stopPropagation()}
                 >
-                  <div className="mb-2 flex items-center justify-between gap-2 border-b border-rule pb-2">
-                    <h3 className="font-display text-base font-semibold text-ink">Notifications</h3>
+                  <div className="flex items-center justify-between gap-2 border-b border-rule px-3.5 py-2.5">
+                    <p className="eyebrow text-clay">Notifications</p>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => {
                           void markAllNotificationsAsRead();
                         }}
-                        className="rounded-sm border border-rule-strong px-2 py-1 text-xs text-ink-soft transition hover:bg-paper-sunk"
+                        className="rounded-sm border border-rule-strong px-2 py-1 text-xs text-ink-soft transition hover:border-ink hover:text-ink"
                       >
                         Mark all read
                       </button>
                       <button
                         type="button"
                         onClick={() => setNotificationsOpen(false)}
-                        className="rounded-sm border border-rule-strong px-2 py-1 text-xs text-ink-soft transition hover:bg-paper-sunk"
+                        className="rounded-sm border border-rule-strong px-2 py-1 text-xs text-ink-soft transition hover:border-ink hover:text-ink"
                       >
                         Close
                       </button>
                     </div>
                   </div>
 
-                  {notificationsLoading ? <p className="text-sm text-ink-faint">Loading notifications…</p> : null}
-                  {notificationsError ? <p className="text-sm text-signal-danger">{notificationsError}</p> : null}
+                  {notificationsLoading ? <p className="px-3.5 py-3 text-sm text-ink-faint">Loading notifications…</p> : null}
+                  {notificationsError ? <p className="px-3.5 py-3 text-sm text-signal-danger">{notificationsError}</p> : null}
 
                   {!notificationsLoading && notifications.length === 0 ? (
-                    <p className="py-4 text-center font-display text-sm italic text-ink-faint">No notifications yet.</p>
+                    <p className="px-3.5 py-6 text-center text-sm text-ink-faint">No notifications yet.</p>
                   ) : null}
 
-                  <div className="max-h-80 space-y-2 overflow-auto pr-1">
-                    {notifications.map((notification) => (
-                      <button
-                        key={notification.id}
-                        type="button"
-                        onClick={() => {
-                          void markNotificationAsRead(notification.id);
-                          setNotificationsOpen(false);
+                  {notifications.length > 0 ? (
+                    <div className="max-h-80 divide-y divide-rule overflow-auto">
+                      {notifications.map((notification) => (
+                        <button
+                          key={notification.id}
+                          type="button"
+                          onClick={() => {
+                            void markNotificationAsRead(notification.id);
+                            setNotificationsOpen(false);
 
-                          if (notification.thread_id) {
-                            openThread(notification.thread_id);
-                          }
-                        }}
-                        className={`w-full rounded-sm border px-2.5 py-2 text-left transition hover:border-ink ${notification.read_at ? "border-rule bg-paper-card" : "border-clay/40 bg-clay-wash/50"}`}
-                      >
-                        <div className="mb-1 flex items-center justify-between gap-2">
-                          <p className="eyebrow text-[0.6rem] text-clay">{notification.type === "mention" ? "Mention" : "Comment"}</p>
-                          <p className="text-[11px] text-ink-faint">{formatNotificationTime(notification.created_at)}</p>
-                        </div>
-                        <p className="text-sm text-ink-soft">{notification.message}</p>
-                      </button>
-                    ))}
-                  </div>
+                            if (notification.thread_id) {
+                              openThread(notification.thread_id);
+                            }
+                          }}
+                          className={`w-full px-3.5 py-2.5 text-left transition hover:bg-paper-sunk ${notification.read_at ? "" : "bg-clay-wash/50"}`}
+                        >
+                          <div className="mb-1 flex items-center justify-between gap-2">
+                            <span className="flex items-center gap-1.5">
+                              {notification.read_at ? null : <span className="h-1.5 w-1.5 rounded-full bg-clay" aria-hidden="true" />}
+                              <span className="eyebrow text-[0.6rem] text-clay">{notification.type === "mention" ? "Mention" : "Comment"}</span>
+                            </span>
+                            <span className="text-[11px] text-ink-faint">{formatNotificationTime(notification.created_at)}</span>
+                          </div>
+                          <p className="text-sm text-ink-soft">{notification.message}</p>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </div>
@@ -2201,7 +2206,7 @@ export default function EditorPage() {
                 onClick={() => {
                   void handleManualSaveCheckpoint();
                 }}
-                className="rounded-sm bg-ink px-3.5 py-2 text-sm font-medium text-paper transition hover:bg-clay"
+                className="rounded-sm bg-ink px-3.5 py-2 text-sm font-medium text-paper transition hover:bg-ink-soft"
               >
                 Save checkpoint
               </button>
@@ -2225,10 +2230,10 @@ export default function EditorPage() {
 
         <section className="flex-1 p-4 md:p-6">
           {error ? <p className="mb-3 rounded-sm border-l-2 border-signal-danger bg-clay-wash/60 px-3 py-2 text-sm text-signal-danger">{error}</p> : null}
-          <div className="mb-4 rounded-sm border border-rule-strong bg-paper-card px-4 py-3">
+          <div className="mb-4 rounded-sm border border-rule bg-paper-card px-4 py-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="eyebrow">Active collaborators</p>
+                <p className="eyebrow text-ink-faint">Active collaborators</p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   {currentUser ? (
                     <div className="flex items-center gap-2 rounded-sm border border-rule bg-paper-raised px-2 py-1">
@@ -2325,14 +2330,14 @@ export default function EditorPage() {
                     : undefined
                 }
               />
-              {!canEdit && !loading ? <p className="mt-3 text-sm italic text-ink-faint">You have viewer access (read-only).</p> : null}
+              {!canEdit && !loading ? <p className="mt-3 text-sm text-ink-faint">You have viewer access (read-only).</p> : null}
             </div>
 
-            <aside className="comments-sidebar rounded-sm border border-rule-strong bg-paper-card p-3 lg:sticky lg:top-20 lg:h-fit">
-              <div className="mb-3 border-b border-rule pb-3">
+            <aside className="comments-sidebar rounded-sm border border-rule bg-paper-card lg:sticky lg:top-20 lg:h-fit">
+              <div className="border-b border-rule px-3 py-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-display text-base font-semibold text-ink">Comments</h3>
+                    <p className="eyebrow text-clay">Comments</p>
                     {commentActivityCount > 0 ? (
                       <span className="rounded-full bg-clay px-2 py-0.5 text-[11px] font-semibold text-paper">{commentActivityCount} new</span>
                     ) : null}
@@ -2382,7 +2387,7 @@ export default function EditorPage() {
                     void handleCreateCommentThread();
                   }}
                   disabled={!canEdit || !selectedCommentRange || commentDraft.trim().length === 0}
-                  className="mt-2 w-full rounded-sm bg-ink px-3 py-2 text-sm font-medium text-paper transition hover:bg-clay disabled:cursor-not-allowed disabled:opacity-60"
+                  className="mt-2 w-full rounded-sm bg-ink px-3 py-2 text-sm font-medium text-paper transition hover:bg-ink-soft disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Create thread
                 </button>
@@ -2390,19 +2395,19 @@ export default function EditorPage() {
                 {commentError ? <p className="mt-2 text-xs text-signal-danger">{commentError}</p> : null}
               </div>
 
-              {commentsLoading ? <p className="text-sm text-ink-faint">Loading comments…</p> : null}
+              <div className="space-y-3 px-3 py-3">
+                {commentsLoading ? <p className="text-sm text-ink-faint">Loading comments…</p> : null}
 
-              {!commentsLoading && visibleCommentThreads.length === 0 ? (
-                <p className="text-sm italic text-ink-faint">
-                  {commentThreads.length === 0
-                    ? "No comments yet. Select text to start a discussion."
-                    : showResolvedThreads
-                      ? "No open comment threads yet."
-                      : "All comment threads are resolved. Turn on Show resolved to review them."}
-                </p>
-              ) : null}
+                {!commentsLoading && visibleCommentThreads.length === 0 ? (
+                  <p className="text-sm text-ink-faint">
+                    {commentThreads.length === 0
+                      ? "No comments yet. Select text to start a discussion."
+                      : showResolvedThreads
+                        ? "No open comment threads yet."
+                        : "All comment threads are resolved. Turn on Show resolved to review them."}
+                  </p>
+                ) : null}
 
-              <div className="space-y-3">
                 {visibleCommentThreads.map((thread) => {
                   const isActive = activeCommentThreadId === thread.id;
                   const threadDetails = thread.comments[0] ? getCommentAuthorDetails(thread.comments[0]) : null;
@@ -2509,16 +2514,16 @@ export default function EditorPage() {
 
               return (
                 <div
-                  className="fixed z-40 w-80 rounded-sm border border-rule-strong bg-paper-card p-3 shadow-[0_28px_64px_-24px_rgba(33,28,22,0.5)]"
+                  className="fixed z-40 w-80 rounded-sm border border-rule bg-paper-card p-3 shadow-lg"
                   style={{ left, top }}
                   onClick={(event) => event.stopPropagation()}
                 >
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <p className="eyebrow">Thread</p>
+                  <div className="-mx-3 mb-2 flex items-center justify-between gap-2 border-b border-rule px-3 pb-2">
+                    <p className="eyebrow text-clay">Thread</p>
                     <button
                       type="button"
                       onClick={() => setCommentPopover(null)}
-                      className="rounded-sm px-1.5 py-1 text-xs text-ink-faint transition hover:bg-paper-sunk"
+                      className="rounded-sm border border-rule-strong px-1.5 py-0.5 text-xs text-ink-soft transition hover:border-ink hover:text-ink"
                     >
                       Close
                     </button>
@@ -2588,9 +2593,12 @@ export default function EditorPage() {
 
       {shareOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 px-4 backdrop-blur-[2px]" role="dialog" aria-modal="true">
-          <div className="reveal w-full max-w-lg rounded-sm border border-rule-strong bg-paper-card p-5 shadow-[0_40px_90px_-40px_rgba(33,28,22,0.6)] md:p-6">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-xl font-semibold text-ink">Share document</h2>
+          <div className="reveal w-full max-w-lg rounded-sm border border-rule bg-paper-card shadow-lg">
+            <div className="flex items-center justify-between gap-3 border-b border-rule px-5 py-3.5 md:px-6">
+              <div>
+                <p className="eyebrow text-clay">Sharing</p>
+                <h2 className="font-display mt-0.5 text-lg font-semibold tracking-tight text-ink">Share document</h2>
+              </div>
               <button
                 type="button"
                 onClick={() => setShareOpen(false)}
@@ -2600,79 +2608,83 @@ export default function EditorPage() {
               </button>
             </div>
 
-            <div className="mt-4 grid gap-2 md:grid-cols-[1fr_auto_auto]">
-              <input
-                type="email"
-                value={inviteEmail}
-                onChange={(event) => setInviteEmail(event.target.value)}
-                placeholder="user@example.com"
-                className="rounded-sm border border-rule-strong bg-paper-raised px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
-              />
-              <select
-                value={inviteRole}
-                onChange={(event) => setInviteRole(event.target.value === "editor" ? "editor" : "viewer")}
-                className="rounded-sm border border-rule-strong bg-paper-raised px-3 py-2.5 text-sm text-ink outline-none transition focus:border-clay"
-              >
-                <option value="viewer">Viewer</option>
-                <option value="editor">Editor</option>
-              </select>
-              <button
-                type="button"
-                onClick={() => {
-                  void handleInvite();
-                }}
-                disabled={inviteBusy}
-                className="rounded-sm bg-ink px-4 py-2.5 text-sm font-medium text-paper transition hover:bg-clay disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {inviteBusy ? "Inviting..." : "Invite"}
-              </button>
-            </div>
-
-            {shareError ? <p className="mt-3 text-sm text-signal-danger">{shareError}</p> : null}
-            {shareSuccess ? <p className="mt-3 text-sm text-pine">{shareSuccess}</p> : null}
-            {verificationHint ? (
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <p className="text-sm text-signal-warn">{verificationHint}</p>
+            <div className="px-5 py-5 md:px-6">
+              <p className="eyebrow mb-2 text-ink-faint">Invite by email</p>
+              <div className="grid gap-2 md:grid-cols-[1fr_auto_auto]">
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(event) => setInviteEmail(event.target.value)}
+                  placeholder="user@example.com"
+                  className="rounded-sm border border-rule-strong bg-paper px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                />
+                <select
+                  value={inviteRole}
+                  onChange={(event) => setInviteRole(event.target.value === "editor" ? "editor" : "viewer")}
+                  className="rounded-sm border border-rule-strong bg-paper px-3 py-2.5 text-sm text-ink outline-none transition focus:border-clay"
+                >
+                  <option value="viewer">Viewer</option>
+                  <option value="editor">Editor</option>
+                </select>
                 <button
                   type="button"
                   onClick={() => {
-                    void handleResendVerification();
+                    void handleInvite();
                   }}
-                  disabled={resendVerificationBusy}
-                  className="rounded-sm border border-clay/40 bg-clay-wash px-2.5 py-1.5 text-xs font-medium text-clay transition hover:bg-clay hover:text-paper disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={inviteBusy}
+                  className="rounded-sm bg-ink px-4 py-2.5 text-sm font-medium text-paper transition hover:bg-ink-soft disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {resendVerificationBusy ? "Sending..." : "Resend verification email"}
+                  {inviteBusy ? "Inviting..." : "Invite"}
                 </button>
               </div>
-            ) : null}
 
-            <div className="mt-4 rounded-sm border border-rule">
-              {collaboratorsLoading ? (
-                <p className="px-3 py-4 text-sm text-ink-faint">Loading collaborators…</p>
-              ) : collaborators.length === 0 ? (
-                <p className="px-3 py-4 text-center font-display text-sm italic text-ink-faint">No collaborators yet.</p>
-              ) : (
-                <ul className="divide-y divide-rule">
-                  {collaborators.map((collaborator) => (
-                    <li key={collaborator.id} className="flex items-center justify-between gap-3 px-3 py-3">
-                      <div>
-                        <p className="text-sm font-medium text-ink">{collaborator.name || collaborator.email || "Unknown user"}</p>
-                        <p className="text-xs text-ink-faint">{collaborator.email || "No email"} · {collaborator.role}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          void handleRemoveCollaborator(collaborator.user_id);
-                        }}
-                        disabled={ownerId === collaborator.user_id}
-                        className="rounded-sm border border-rule-strong px-3 py-1.5 text-xs font-medium text-ink-soft transition hover:bg-paper-sunk disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        Remove
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {shareError ? <p className="mt-3 text-sm text-signal-danger">{shareError}</p> : null}
+              {shareSuccess ? <p className="mt-3 text-sm text-pine">{shareSuccess}</p> : null}
+              {verificationHint ? (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <p className="text-sm text-signal-warn">{verificationHint}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handleResendVerification();
+                    }}
+                    disabled={resendVerificationBusy}
+                    className="rounded-sm border border-clay/40 bg-clay-wash px-2.5 py-1.5 text-xs font-medium text-clay transition hover:bg-clay hover:text-paper disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {resendVerificationBusy ? "Sending..." : "Resend verification email"}
+                  </button>
+                </div>
+              ) : null}
+
+              <p className="eyebrow mb-2 mt-5 text-ink-faint">People with access</p>
+              <div className="rounded-sm border border-rule">
+                {collaboratorsLoading ? (
+                  <p className="px-3 py-4 text-sm text-ink-faint">Loading collaborators…</p>
+                ) : collaborators.length === 0 ? (
+                  <p className="px-3 py-6 text-center text-sm text-ink-faint">No collaborators yet.</p>
+                ) : (
+                  <ul className="divide-y divide-rule">
+                    {collaborators.map((collaborator) => (
+                      <li key={collaborator.id} className="flex items-center justify-between gap-3 px-3 py-3">
+                        <div>
+                          <p className="text-sm font-medium text-ink">{collaborator.name || collaborator.email || "Unknown user"}</p>
+                          <p className="text-xs text-ink-faint">{collaborator.email || "No email"} · {collaborator.role}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void handleRemoveCollaborator(collaborator.user_id);
+                          }}
+                          disabled={ownerId === collaborator.user_id}
+                          className="rounded-sm border border-rule-strong px-3 py-1.5 text-xs font-medium text-ink-soft transition hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Remove
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -2680,11 +2692,12 @@ export default function EditorPage() {
 
       {githubModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 px-4 backdrop-blur-[2px]" role="dialog" aria-modal="true">
-          <div className="reveal w-full max-w-2xl rounded-sm border border-rule-strong bg-paper-card p-5 shadow-[0_40px_90px_-40px_rgba(33,28,22,0.6)] md:p-6">
-            <div className="flex items-center justify-between gap-3">
+          <div className="reveal w-full max-w-2xl rounded-sm border border-rule bg-paper-card shadow-lg">
+            <div className="flex items-start justify-between gap-3 border-b border-rule px-5 py-3.5 md:px-6">
               <div>
-                <h2 className="font-display text-xl font-semibold text-ink">{githubLinked ? "Manage GitHub link" : "Link GitHub repo"}</h2>
-                <p className="text-sm text-ink-faint">
+                <p className="eyebrow text-clay">GitHub</p>
+                <h2 className="font-display mt-0.5 text-lg font-semibold tracking-tight text-ink">{githubLinked ? "Manage GitHub link" : "Link GitHub repo"}</h2>
+                <p className="mt-0.5 text-sm text-ink-faint">
                   {githubLinked
                     ? "Update the repository, branch, or path used for document sync."
                     : "Choose a GitHub repository and path to sync this document."}
@@ -2699,7 +2712,7 @@ export default function EditorPage() {
               </button>
             </div>
 
-            <div className="mt-4 space-y-3">
+            <div className="space-y-3 px-5 py-5 md:px-6">
               <div className="flex gap-1 rounded-sm border border-rule-strong bg-paper-raised p-1">
                 <button
                   type="button"
@@ -2841,7 +2854,7 @@ export default function EditorPage() {
               {githubSuccess ? <p className="text-sm text-pine">{githubSuccess}</p> : null}
 
               {githubPreviewDiff.length > 0 ? (
-                <pre className="max-h-56 overflow-auto rounded-sm border border-rule bg-[#1f1a14] p-3 font-mono text-xs leading-5 whitespace-pre-wrap text-paper-sunk">{githubPreviewDiff
+                <pre className="max-h-56 overflow-auto rounded-sm border border-rule bg-paper-sunk p-3 font-mono text-xs leading-5 whitespace-pre-wrap text-ink-soft">{githubPreviewDiff
                   .map((change) => {
                     if (change.added) {
                       return `+ ${change.value}`;
@@ -2876,7 +2889,7 @@ export default function EditorPage() {
                         void handleConnectGitHub();
                       }}
                       disabled={githubSaving || githubLoadingRepos}
-                      className="rounded-sm bg-ink px-4 py-2.5 text-sm font-medium text-paper transition hover:bg-clay disabled:opacity-60"
+                      className="rounded-sm bg-ink px-4 py-2.5 text-sm font-medium text-paper transition hover:bg-ink-soft disabled:opacity-60"
                     >
                       {githubSaving ? "Connecting..." : "Connect"}
                     </button>
@@ -2889,7 +2902,7 @@ export default function EditorPage() {
                         void handleCreateGitHubRepo();
                       }}
                       disabled={githubCreatingRepo}
-                      className="rounded-sm bg-ink px-4 py-2.5 text-sm font-medium text-paper transition hover:bg-clay disabled:opacity-60"
+                      className="rounded-sm bg-ink px-4 py-2.5 text-sm font-medium text-paper transition hover:bg-ink-soft disabled:opacity-60"
                     >
                       {githubCreatingRepo ? "Creating repo..." : "Create & link"}
                     </button>
@@ -2926,11 +2939,12 @@ export default function EditorPage() {
 
       {historyOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 px-4 backdrop-blur-[2px]" role="dialog" aria-modal="true">
-          <div className="reveal w-full max-w-4xl rounded-sm border border-rule-strong bg-paper-card p-5 shadow-[0_40px_90px_-40px_rgba(33,28,22,0.6)] md:p-6">
-            <div className="flex items-center justify-between gap-3">
+          <div className="reveal w-full max-w-4xl rounded-sm border border-rule bg-paper-card shadow-lg">
+            <div className="flex items-start justify-between gap-3 border-b border-rule px-5 py-3.5 md:px-6">
               <div>
-                <h2 className="font-display text-xl font-semibold text-ink">Document history</h2>
-                <p className="text-sm text-ink-faint">Restore old versions or compare any two snapshots.</p>
+                <p className="eyebrow text-clay">History</p>
+                <h2 className="font-display mt-0.5 text-lg font-semibold tracking-tight text-ink">Document history</h2>
+                <p className="mt-0.5 text-sm text-ink-faint">Restore old versions or compare any two snapshots.</p>
               </div>
               <button
                 type="button"
@@ -2941,7 +2955,7 @@ export default function EditorPage() {
               </button>
             </div>
 
-            <div className="mt-4 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="grid gap-4 px-5 py-5 md:px-6 lg:grid-cols-[1.1fr_0.9fr]">
               <div className="rounded-sm border border-rule">
                 <div className="border-b border-rule px-3 py-2">
                   <p className="eyebrow">Versions</p>
@@ -2951,7 +2965,7 @@ export default function EditorPage() {
                 ) : historyError ? (
                   <p className="px-3 py-4 text-sm text-signal-danger">{historyError}</p>
                 ) : versions.length === 0 ? (
-                  <p className="px-3 py-4 text-center font-display text-sm italic text-ink-faint">No versions yet.</p>
+                  <p className="px-3 py-6 text-center text-sm text-ink-faint">No versions yet.</p>
                 ) : (
                   <ul className="max-h-[24rem] divide-y divide-rule overflow-auto">
                     {versions.map((version) => (
@@ -3025,7 +3039,7 @@ export default function EditorPage() {
                       );
                     })()
                   ) : (
-                    <p className="mt-2 text-sm italic text-ink-faint">Select a version to inspect it.</p>
+                    <p className="mt-2 text-sm text-ink-faint">Select a version to inspect it.</p>
                   )}
                 </div>
 
@@ -3071,7 +3085,7 @@ export default function EditorPage() {
                         void handleCompareVersions();
                       }}
                       disabled={compareLoading}
-                      className="rounded-sm bg-ink px-3.5 py-2.5 text-sm font-medium text-paper transition hover:bg-clay disabled:opacity-60"
+                      className="rounded-sm bg-ink px-3.5 py-2.5 text-sm font-medium text-paper transition hover:bg-ink-soft disabled:opacity-60"
                     >
                       {compareLoading ? "Comparing..." : "Compare"}
                     </button>
@@ -3093,16 +3107,19 @@ export default function EditorPage() {
 
       {logsOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 px-4 backdrop-blur-[2px]" role="dialog" aria-modal="true">
-          <div className="reveal w-full max-w-2xl rounded-sm border border-rule-strong bg-paper-card p-5 shadow-[0_40px_90px_-40px_rgba(33,28,22,0.6)] md:p-6">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-xl font-semibold text-ink">Activity logs</h2>
+          <div className="reveal w-full max-w-2xl rounded-sm border border-rule bg-paper-card shadow-lg">
+            <div className="flex items-center justify-between gap-3 border-b border-rule px-5 py-3.5 md:px-6">
+              <div>
+                <p className="eyebrow text-clay">Activity</p>
+                <h2 className="font-display mt-0.5 text-lg font-semibold tracking-tight text-ink">Activity logs</h2>
+              </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     void loadActivityLogs();
                   }}
-                  className="rounded-sm border border-rule-strong px-3 py-1.5 text-sm text-ink-soft transition hover:bg-paper-sunk"
+                  className="rounded-sm border border-rule-strong px-3 py-1.5 text-sm text-ink-soft transition hover:border-ink hover:text-ink"
                 >
                   Refresh
                 </button>
@@ -3116,26 +3133,28 @@ export default function EditorPage() {
               </div>
             </div>
 
-            {logsError ? <p className="mt-3 text-sm text-signal-danger">{logsError}</p> : null}
+            <div className="px-5 py-5 md:px-6">
+              {logsError ? <p className="mb-3 text-sm text-signal-danger">{logsError}</p> : null}
 
-            <div className="mt-4 rounded-sm border border-rule">
-              {logsLoading ? (
-                <p className="px-3 py-4 text-sm text-ink-faint">Loading activity…</p>
-              ) : activityLogs.length === 0 ? (
-                <p className="px-3 py-4 text-center font-display text-sm italic text-ink-faint">No activity yet.</p>
-              ) : (
-                <ul className="max-h-96 divide-y divide-rule overflow-auto">
-                  {activityLogs.map((log) => (
-                    <li key={log.id} className="flex items-center justify-between gap-3 px-3 py-3">
-                      <div>
-                        <p className="text-sm font-medium text-ink">{log.name || log.email || "Anonymous"}</p>
-                        <p className="font-mono text-[11px] uppercase tracking-wider text-clay">{log.action}</p>
-                      </div>
-                      <p className="text-xs text-ink-faint">{formatLogTime(log.created_at)}</p>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <div className="rounded-sm border border-rule">
+                {logsLoading ? (
+                  <p className="px-3 py-4 text-sm text-ink-faint">Loading activity…</p>
+                ) : activityLogs.length === 0 ? (
+                  <p className="px-3 py-6 text-center text-sm text-ink-faint">No activity yet.</p>
+                ) : (
+                  <ul className="max-h-96 divide-y divide-rule overflow-auto">
+                    {activityLogs.map((log) => (
+                      <li key={log.id} className="flex items-center justify-between gap-3 px-3 py-3">
+                        <div>
+                          <p className="text-sm font-medium text-ink">{log.name || log.email || "Anonymous"}</p>
+                          <p className="font-mono text-[11px] uppercase tracking-wider text-clay">{log.action}</p>
+                        </div>
+                        <p className="text-xs text-ink-faint">{formatLogTime(log.created_at)}</p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </div>
         </div>

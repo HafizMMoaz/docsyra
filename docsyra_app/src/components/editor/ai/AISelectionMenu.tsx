@@ -189,7 +189,7 @@ export default function AISelectionMenu({
       transition={{ duration: 0.16, ease: "easeOut" }}
       role="menu"
       aria-label="AI selection actions"
-      className="flex w-72 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-sm border border-rule-strong bg-paper-card shadow-[0_28px_64px_-24px_rgba(33,28,22,0.5)]"
+      className="flex w-72 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-sm border border-rule bg-paper-card shadow-lg"
     >
       {/* Header */}
       <div className="flex items-center justify-between gap-3 border-b border-rule px-3.5 py-2.5">

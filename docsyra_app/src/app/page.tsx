@@ -1,11 +1,4 @@
 import Link from "next/link";
-import { FaEnvelope, FaGithub, FaLinkedin, FaDiscord, FaTwitter } from "react-icons/fa";
-
-const ledger = [
-  { no: "01", label: "Real-time", value: "Yjs + awareness" },
-  { no: "02", label: "Comments", value: "Threads + anchors" },
-  { no: "03", label: "Sync", value: "GitHub connected" },
-];
 
 const features = [
   {
@@ -26,182 +19,143 @@ const features = [
   },
 ];
 
-const contacts = [
-  { label: "Email", value: "hafizmoazkhalid@gmail.com", icon: FaEnvelope, href: undefined as string | undefined },
-  { label: "GitHub", value: "HafizMMoaz", href: "https://github.com/HafizMMoaz", icon: FaGithub },
-  { label: "LinkedIn", value: "hafizmmoaz", href: "https://www.linkedin.com/in/hafizmmoaz", icon: FaLinkedin },
-  { label: "Discord", value: "hafizmmoaz", icon: FaDiscord, href: undefined as string | undefined },
-  { label: "Twitter / X", value: "hafizmmoaz", href: "https://x.com/hafizmmoaz", icon: FaTwitter },
+const stats = [
+  { label: "Real-time", value: "Yjs + awareness" },
+  { label: "Comments", value: "Threads + anchors" },
+  { label: "Sync", value: "GitHub connected" },
 ];
 
 export default function Home() {
   return (
     <div className="min-h-screen">
-      <main className="mx-auto w-full max-w-[1320px] px-5 py-6 sm:px-8 lg:px-12 lg:py-10">
-        {/* Masthead */}
-        <header className="reveal flex flex-wrap items-end justify-between gap-4 border-b-2 border-ink pb-5">
-          <div className="flex items-baseline gap-3">
-            <span className="font-display text-3xl font-semibold tracking-tight text-ink">Docsyra</span>
-            <span className="hidden h-4 w-px bg-rule-strong sm:block" />
-            <span className="eyebrow hidden sm:block">The Collaborative Document Workspace</span>
-          </div>
-          <div className="flex items-center gap-3 text-sm">
-            <span className="eyebrow hidden md:block">Vol. 1 — Edition 2026</span>
+      {/* Top bar */}
+      <header className="border-b border-rule">
+        <div className="mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between px-5 sm:px-8">
+          <span className="font-display text-xl font-bold tracking-tight text-ink">
+            Docsyra
+          </span>
+          <Link
+            href="/login"
+            className="rounded-sm border border-rule-strong bg-paper px-4 py-2 text-sm font-medium text-ink transition hover:bg-paper-sunk"
+          >
+            Sign in
+          </Link>
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-[1200px] px-5 sm:px-8">
+        {/* Hero */}
+        <section className="border-b border-rule py-20 sm:py-28">
+          <p className="reveal eyebrow">
+            Collaborative documents
+          </p>
+          <h1
+            className="reveal font-display mt-6 max-w-4xl text-4xl font-bold leading-[1.05] tracking-tight text-ink sm:text-6xl"
+            style={{ animationDelay: "60ms" }}
+          >
+            A focused workspace for writing, collaborating, and shipping documents.
+          </h1>
+          <p
+            className="reveal mt-6 max-w-2xl text-lg leading-relaxed text-ink-soft"
+            style={{ animationDelay: "120ms" }}
+          >
+            Docsyra brings a clean editor, live collaboration, threaded comments,
+            notifications, sharing, and GitHub sync into one fast, quiet surface.
+          </p>
+          <div
+            className="reveal mt-9 flex flex-wrap items-center gap-3"
+            style={{ animationDelay: "180ms" }}
+          >
             <Link
               href="/login"
-              className="rounded-sm border border-ink px-4 py-2 font-medium text-ink transition hover:bg-ink hover:text-paper"
+              className="inline-flex items-center justify-center rounded-sm bg-ink px-6 py-3 text-base font-medium text-paper transition hover:bg-ink-soft"
             >
               Open Docsyra
             </Link>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center justify-center rounded-sm border border-rule-strong bg-paper px-6 py-3 text-base font-medium text-ink transition hover:bg-paper-sunk"
+            >
+              View dashboard
+            </Link>
           </div>
-        </header>
+        </section>
 
-        <div className="grid gap-10 pt-10 lg:grid-cols-[1.62fr_1fr] lg:gap-14">
-          {/* Lead column */}
-          <section>
-            <p className="reveal eyebrow" style={{ animationDelay: "60ms" }}>
-              Collaborative documents · comments · presence · sync
-            </p>
-
-            <h1
-              className="reveal font-display mt-5 text-[2.65rem] font-semibold leading-[1.04] tracking-tight text-ink sm:text-6xl xl:text-[4.6rem]"
-              style={{ animationDelay: "120ms" }}
-            >
-              A focused workspace for{" "}
-              <span className="italic text-clay">writing</span>,{" "}
-              collaborating, and shipping documents.
-            </h1>
-
-            <p
-              className="reveal mt-6 max-w-2xl text-lg leading-relaxed text-ink-soft"
-              style={{ animationDelay: "200ms" }}
-            >
-              Docsyra draws a clean editor, live collaboration, threaded comments, notifications,
-              sharing, and GitHub sync into one quiet, fast surface — the kind of tool that
-              disappears so the work can show.
-            </p>
-
+        {/* Stats strip */}
+        <section className="reveal grid border-b border-rule sm:grid-cols-3">
+          {stats.map((item, index) => (
             <div
-              className="reveal mt-8 flex flex-wrap items-center gap-3"
-              style={{ animationDelay: "280ms" }}
+              key={item.label}
+              className={`py-8 sm:px-8 ${
+                index === 0 ? "sm:pl-0" : "sm:border-l sm:border-rule"
+              }`}
             >
-              <Link
-                href="/login"
-                className="group inline-flex items-center gap-2 rounded-sm bg-ink px-6 py-3.5 text-base font-medium text-paper transition hover:bg-clay"
+              <p className="eyebrow">{item.label}</p>
+              <p className="font-display mt-2 text-xl font-bold tracking-tight text-ink">
+                {item.value}
+              </p>
+            </div>
+          ))}
+        </section>
+
+        {/* Feature grid */}
+        <section className="py-20">
+          <p className="reveal eyebrow">Capabilities</p>
+          <h2 className="reveal font-display mt-4 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+            Everything a document team needs
+          </h2>
+          <div className="reveal mt-12 grid border-t border-rule sm:grid-cols-2">
+            {features.map((item, index) => (
+              <article
+                key={item.title}
+                className={`flex gap-5 border-b border-rule py-8 sm:py-10 ${
+                  index % 2 === 1 ? "sm:border-l sm:border-rule sm:pl-10" : "sm:pr-10"
+                }`}
               >
-                Open Docsyra
-                <span className="transition-transform group-hover:translate-x-1">→</span>
-              </Link>
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center justify-center rounded-sm border border-rule-strong bg-paper-card px-6 py-3.5 text-base font-medium text-ink transition hover:border-ink"
-              >
-                View dashboard
-              </Link>
-            </div>
-
-            {/* Ledger of capabilities */}
-            <div
-              className="reveal mt-12 grid gap-px overflow-hidden rounded-sm border border-rule-strong bg-rule-strong sm:grid-cols-3"
-              style={{ animationDelay: "340ms" }}
-            >
-              {ledger.map((item) => (
-                <div key={item.label} className="bg-paper-card p-5">
-                  <div className="flex items-baseline justify-between">
-                    <p className="eyebrow">{item.label}</p>
-                    <span className="font-display text-sm text-ink-ghost">{item.no}</span>
-                  </div>
-                  <p className="font-display mt-2 text-xl font-semibold text-ink">{item.value}</p>
+                <span className="font-display select-none text-sm font-bold leading-none text-clay">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <div>
+                  <h3 className="font-display text-lg font-bold tracking-tight text-ink">
+                    {item.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+                    {item.text}
+                  </p>
                 </div>
-              ))}
-            </div>
+              </article>
+            ))}
+          </div>
+        </section>
 
-            {/* Feature register */}
-            <div
-              className="reveal mt-12 border-t border-rule pt-8"
-              style={{ animationDelay: "400ms" }}
-            >
-              <p className="eyebrow mb-6">In this edition</p>
-              <div className="grid gap-x-10 gap-y-8 sm:grid-cols-2">
-                {features.map((item, index) => (
-                  <article key={item.title} className="flex gap-4">
-                    <span className="font-display select-none text-2xl font-semibold leading-none text-clay">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <div>
-                      <h3 className="font-display text-lg font-semibold text-ink">{item.title}</h3>
-                      <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">{item.text}</p>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Colophon column */}
-          <aside className="reveal lg:pl-2" style={{ animationDelay: "240ms" }}>
-            <div className="lg:sticky lg:top-10">
-              <div className="rounded-sm border border-rule-strong bg-paper-raised p-7">
-                <p className="eyebrow">The Colophon</p>
-                <h2 className="font-display mt-3 text-3xl font-semibold tracking-tight text-ink">
-                  Hafiz Muhammad Moaz
-                </h2>
-                <p className="mt-4 text-sm leading-relaxed text-ink-soft">
-                  I am the author of this codebase. Docsyra is my collaborative document
-                  workspace, built around clarity, speed, and a practical product workflow.
-                </p>
-
-                <div className="mt-6 space-y-px overflow-hidden rounded-sm border border-rule bg-rule">
-                  {contacts.map((item) => (
-                    <div key={item.label} className="flex items-center gap-3 bg-paper-card px-3.5 py-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-paper-sunk text-ink-soft">
-                        <item.icon className="h-4 w-4" />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="eyebrow text-[0.6rem]">{item.label}</p>
-                        {item.href ? (
-                          <a
-                            href={item.href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block truncate text-sm font-medium text-ink transition hover:text-clay"
-                          >
-                            {item.value}
-                          </a>
-                        ) : (
-                          <p className="truncate text-sm font-medium text-ink">{item.value}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-5 rounded-sm bg-ink p-7 text-paper">
-                <p className="eyebrow text-clay-soft">What it includes</p>
-                <ul className="mt-5 space-y-3 text-sm text-paper-sunk">
-                  {[
-                    "Rich text editor with comments and presence",
-                    "Notifications, email alerts, and mentions",
-                    "Sharing, roles, and document activity logs",
-                    "GitHub repository linking and sync",
-                  ].map((line) => (
-                    <li key={line} className="flex gap-3">
-                      <span className="font-display mt-0.5 text-clay-soft">—</span>
-                      <span>{line}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </aside>
-        </div>
-
-        <footer className="reveal mt-16 flex flex-wrap items-center justify-between gap-3 border-t-2 border-ink pt-5 text-sm text-ink-faint">
-          <p className="font-display italic">&ldquo;Set it down before it slips away.&rdquo;</p>
-          <p className="eyebrow">Docsyra — Printed on warm paper</p>
-        </footer>
+        {/* CTA band */}
+        <section className="reveal mb-20 flex flex-wrap items-center justify-between gap-6 rounded-md border border-rule px-8 py-10">
+          <div>
+            <h2 className="font-display text-2xl font-bold tracking-tight text-ink">
+              Ready to start writing?
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+              Sign in and open your first collaborative document.
+            </p>
+          </div>
+          <Link
+            href="/login"
+            className="inline-flex items-center justify-center rounded-sm bg-ink px-6 py-3 text-base font-medium text-paper transition hover:bg-ink-soft"
+          >
+            Open Docsyra
+          </Link>
+        </section>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-rule">
+        <div className="mx-auto flex w-full max-w-[1200px] flex-wrap items-center justify-between gap-3 px-5 py-8 sm:px-8">
+          <span className="font-display text-sm font-bold tracking-tight text-ink">
+            Docsyra
+          </span>
+          <p className="eyebrow">The collaborative document workspace</p>
+        </div>
+      </footer>
     </div>
   );
 }

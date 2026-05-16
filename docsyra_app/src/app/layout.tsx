@@ -1,26 +1,26 @@
 import type { Metadata } from "next";
-import { Fraunces, Spline_Sans, Spline_Sans_Mono } from "next/font/google";
+import { Bricolage_Grotesque, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const fraunces = Fraunces({
+/* Display — Bricolage Grotesque: a characterful grotesk for headlines. */
+const display = Bricolage_Grotesque({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-display",
-  axes: ["SOFT", "WONK", "opsz"],
 });
 
-const splineSans = Spline_Sans({
+/* Body / UI — Hanken Grotesk: clean, humanist, highly legible. */
+const body = Hanken_Grotesk({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-body",
-  weight: ["300", "400", "500", "600", "700"],
 });
 
-const splineSansMono = Spline_Sans_Mono({
+/* Mono — JetBrains Mono: metadata, labels, code. */
+const mono = JetBrains_Mono({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-mono",
-  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -36,7 +36,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${fraunces.variable} ${splineSans.variable} ${splineSansMono.variable}`}
+      className={`${display.variable} ${body.variable} ${mono.variable}`}
     >
       <body suppressHydrationWarning className="antialiased">
         {children}

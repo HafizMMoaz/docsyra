@@ -111,101 +111,94 @@ export default function MyDocsPage() {
   }, []);
 
   return (
-    <section className="mx-auto max-w-5xl space-y-9">
-      <div className="reveal flex flex-wrap items-end justify-between gap-4 border-b-2 border-ink pb-6">
+    <section className="mx-auto max-w-5xl space-y-8">
+      <div className="reveal flex flex-wrap items-end justify-between gap-4 border-b border-rule pb-6">
         <div>
-          <p className="eyebrow">The catalogue</p>
-          <h1 className="font-display mt-2 text-4xl font-semibold tracking-tight text-ink">My Docs</h1>
-          <p className="mt-2 text-sm text-ink-faint">
+          <p className="eyebrow text-ink-ghost">The catalogue</p>
+          <h1 className="font-display mt-2 text-3xl font-bold tracking-tight text-ink">My Docs</h1>
+          <p className="mt-1.5 text-sm text-ink-faint">
             Every document you own or can access, with collaborators and last update time.
           </p>
         </div>
         {stats ? (
           <div className="text-right">
-            <p className="font-display text-3xl font-semibold text-ink">{stats.totalDocuments}</p>
-            <p className="eyebrow text-[0.6rem]">{stats.collaborators} collaborators</p>
+            <p className="font-display text-3xl font-bold tabular-nums text-ink">{stats.totalDocuments}</p>
+            <p className="eyebrow text-[0.6rem] text-ink-ghost">{stats.collaborators} collaborators</p>
           </div>
         ) : null}
       </div>
 
       {error ? (
-        <p className="rounded-sm border-l-2 border-signal-danger bg-clay-wash/60 px-3 py-2 text-sm text-signal-danger">
+        <p className="rounded-sm border border-signal-danger/30 bg-paper-sunk px-3 py-2 text-sm text-signal-danger">
           {error}
         </p>
       ) : null}
 
       {loading ? (
-        <div className="rounded-sm border border-rule-strong bg-paper-card p-12 text-center">
-          <p className="font-display text-base italic text-ink-faint">Pulling the catalogue…</p>
+        <div className="rounded-md border border-rule bg-paper p-12 text-center">
+          <p className="text-sm text-ink-faint">Pulling the catalogue…</p>
         </div>
       ) : null}
 
       {!loading && documents.length > 0 ? (
-        <div className="grid gap-4 reveal" style={{ animationDelay: "80ms" }}>
+        <div className="reveal overflow-hidden rounded-md border border-rule" style={{ animationDelay: "80ms" }}>
           {documents.map((document, index) => (
             <button
               key={document.id}
               type="button"
               onClick={() => router.push(`/editor/${document.id}`)}
-              className="group rounded-sm border border-rule-strong bg-paper-card p-5 text-left transition hover:border-ink"
+              className="group flex w-full items-start gap-4 border-b border-rule bg-paper px-5 py-4 text-left transition last:border-b-0 hover:bg-paper-sunk"
             >
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="flex min-w-0 flex-1 items-start gap-4">
-                  <span className="font-display text-lg text-ink-ghost">
-                    {String(index + 1).padStart(2, "0")}
+              <span className="mt-0.5 w-6 shrink-0 font-mono text-xs text-ink-ghost">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h2 className="truncate text-sm font-semibold text-ink group-hover:text-clay">
+                    {document.title || "Untitled"}
+                  </h2>
+                  <span
+                    className={`rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+                      document.visibility === "public"
+                        ? "border-pine/30 bg-pine-wash text-pine"
+                        : "border-rule text-ink-faint"
+                    }`}
+                  >
+                    {document.visibility === "public" ? "Public" : "Private"}
                   </span>
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2.5">
-                      <h2 className="font-display truncate text-lg font-semibold text-ink group-hover:text-clay">
-                        {document.title || "Untitled"}
-                      </h2>
-                      <span
-                        className={`rounded-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
-                          document.visibility === "public"
-                            ? "bg-pine-wash text-pine"
-                            : "bg-paper-sunk text-ink-faint"
-                        }`}
-                      >
-                        {document.visibility === "public" ? "Public" : "Private"}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm text-ink-faint">
-                      Last updated {formatRelativeTime(document.updated_at)} · {formatTimestamp(document.updated_at)}
-                    </p>
-                  </div>
                 </div>
-                <span className="text-ink-ghost transition-transform group-hover:translate-x-0.5 group-hover:text-clay" aria-hidden>
-                  Open →
-                </span>
+                <p className="mt-1 font-mono text-xs text-ink-faint">
+                  Updated {formatRelativeTime(document.updated_at)} · {formatTimestamp(document.updated_at)}
+                </p>
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  {document.collaborators.length > 0 ? (
+                    document.collaborators.map((collaborator) => (
+                      <span
+                        key={collaborator.id}
+                        className="inline-flex items-center gap-1.5 rounded-sm border border-rule px-2 py-0.5 text-xs text-ink-soft"
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full bg-clay" />
+                        {collaborator.name || collaborator.email || "Unknown user"}
+                        <span className="text-ink-ghost">· {collaborator.role}</span>
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs text-ink-ghost">No collaborators yet</span>
+                  )}
+                </div>
               </div>
-
-              <div className="mt-4 flex flex-wrap gap-2 border-t border-rule pt-4">
-                {document.collaborators.length > 0 ? (
-                  document.collaborators.map((collaborator) => (
-                    <span
-                      key={collaborator.id}
-                      className="inline-flex items-center gap-2 rounded-sm border border-rule bg-paper-raised px-2.5 py-1 text-xs text-ink-soft"
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full bg-pine" />
-                      {collaborator.name || collaborator.email || "Unknown user"}
-                      <span className="text-ink-ghost">· {collaborator.role}</span>
-                    </span>
-                  ))
-                ) : (
-                  <span className="rounded-sm border border-dashed border-rule-strong px-2.5 py-1 text-xs text-ink-faint">
-                    No collaborators yet
-                  </span>
-                )}
-              </div>
+              <span className="mt-0.5 shrink-0 text-ink-ghost transition group-hover:translate-x-0.5 group-hover:text-clay" aria-hidden>
+                →
+              </span>
             </button>
           ))}
         </div>
       ) : null}
 
       {!loading && documents.length === 0 ? (
-        <div className="reveal rounded-sm border border-dashed border-rule-strong bg-paper-card p-12 text-center">
-          <p className="font-display text-xl font-semibold text-ink">The catalogue is empty</p>
-          <p className="mt-2 text-sm text-ink-faint">
+        <div className="reveal rounded-md border border-dashed border-rule-strong bg-paper p-12 text-center">
+          <p className="font-display text-lg font-bold tracking-tight text-ink">The catalogue is empty</p>
+          <p className="mt-1.5 text-sm text-ink-faint">
             Create a new document from the dashboard to get started.
           </p>
         </div>

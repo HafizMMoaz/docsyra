@@ -259,39 +259,37 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   if (loadingSession) {
     return (
       <div className="flex min-h-screen items-center justify-center px-4 text-sm text-ink-faint">
-        <span className="font-display italic">Opening your workspace…</span>
+        <span className="eyebrow">Opening workspace</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen text-ink">
+    <div className="min-h-screen bg-paper text-ink">
       <div className="flex min-h-screen">
-        <aside className="hidden w-64 shrink-0 border-r border-rule bg-paper-raised md:flex md:flex-col">
-          <div className="border-b border-rule px-6 py-6">
-            <div className="flex items-baseline gap-2">
-              <span className="font-display text-2xl font-semibold tracking-tight text-ink">Docsyra</span>
-            </div>
-            <p className="eyebrow mt-1">Document Workspace</p>
+        <aside className="hidden w-64 shrink-0 border-r border-rule bg-paper md:flex md:flex-col">
+          <div className="flex h-14 items-center border-b border-rule px-6">
+            <span className="font-display text-lg font-bold tracking-tight text-ink">Docsyra</span>
           </div>
 
-          <nav className="flex-1 px-3 py-5">
-            <p className="eyebrow px-3 pb-2">Navigation</p>
-            <div className="space-y-1">
+          <nav className="flex-1 px-3 py-6">
+            <p className="eyebrow px-3 pb-3 text-ink-ghost">Navigation</p>
+            <div className="space-y-0.5">
               {navItems.map((item, index) => {
                 const active = isActive(item.href);
                 return (
                   <Link
                     key={item.label}
                     href={item.href}
+                    aria-current={active ? "page" : undefined}
                     className={
                       active
-                        ? "flex items-center gap-3 rounded-sm bg-ink px-3 py-2.5 text-sm font-medium text-paper"
-                        : "flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-ink-soft transition hover:bg-paper-sunk hover:text-ink"
+                        ? "flex items-center gap-3 rounded-sm border border-rule bg-paper-sunk px-3 py-2 text-sm font-medium text-ink"
+                        : "flex items-center gap-3 rounded-sm border border-transparent px-3 py-2 text-sm font-medium text-ink-soft transition hover:bg-paper-sunk hover:text-ink"
                     }
                   >
                     <span
-                      className={`font-display text-xs ${active ? "text-clay-soft" : "text-ink-ghost"}`}
+                      className={`w-5 font-mono text-[11px] ${active ? "text-clay" : "text-ink-ghost"}`}
                     >
                       {String(index + 1).padStart(2, "0")}
                     </span>
@@ -302,23 +300,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </nav>
 
-          <div className="border-t border-rule px-6 py-5">
-            <p className="font-display text-sm italic text-ink-faint">
-              &ldquo;A place for every page.&rdquo;
-            </p>
+          <div className="border-t border-rule px-6 py-4">
+            <p className="eyebrow text-ink-ghost">Document Workspace</p>
           </div>
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-rule bg-paper-raised/95 px-4 py-3 backdrop-blur md:px-7">
+          <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-3 border-b border-rule bg-paper px-4 md:px-8">
             <div className="flex items-center gap-3 md:flex-1">
-              <span className="font-display text-lg font-semibold tracking-tight text-ink md:hidden">
+              <span className="font-display text-base font-bold tracking-tight text-ink md:hidden">
                 Docsyra
               </span>
               <input
                 type="text"
-                placeholder="Search documents…"
-                className="hidden w-full max-w-sm rounded-sm border border-rule-strong bg-paper-card px-3.5 py-2 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay md:block"
+                placeholder="Search documents"
+                className="hidden w-full max-w-xs rounded-sm border border-rule bg-paper px-3 py-1.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay md:block"
               />
             </div>
             <div className="flex items-center gap-2.5">
@@ -333,11 +329,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       void loadNotifications(12);
                     }
                   }}
-                  className={`relative rounded-sm border border-rule-strong bg-paper-card px-3.5 py-2 text-sm font-medium text-ink-soft transition hover:border-ink hover:text-ink ${newNotificationsPulse ? "notifications-bell-pulse" : ""}`}
+                  className={`relative rounded-sm border border-rule bg-paper px-3 py-1.5 text-sm font-medium text-ink-soft transition hover:border-rule-strong hover:text-ink ${newNotificationsPulse ? "notifications-bell-pulse" : ""}`}
                 >
                   Notifications
                   {unreadNotificationCount > 0 ? (
-                    <span className="ml-2 rounded-full bg-clay px-1.5 py-0.5 text-[11px] font-semibold text-paper">
+                    <span className="ml-2 rounded-sm bg-clay px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-paper">
                       {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
                     </span>
                   ) : null}
@@ -345,72 +341,77 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
                 {notificationsOpen ? (
                   <div
-                    className="absolute right-0 z-50 mt-2 w-96 rounded-sm border border-rule-strong bg-paper-card p-3 shadow-[0_28px_64px_-24px_rgba(33,28,22,0.45)]"
+                    className="absolute right-0 z-50 mt-2 w-96 rounded-md border border-rule-strong bg-paper"
                     onClick={(event) => event.stopPropagation()}
                   >
-                    <div className="mb-2 flex items-center justify-between gap-2 border-b border-rule pb-2">
-                      <h3 className="font-display text-base font-semibold text-ink">Notifications</h3>
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between gap-2 border-b border-rule px-3 py-2.5">
+                      <h3 className="font-display text-sm font-bold tracking-tight text-ink">Notifications</h3>
+                      <div className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => {
                             void markAllNotificationsAsRead();
                           }}
-                          className="rounded-sm border border-rule-strong px-2 py-1 text-xs text-ink-soft transition hover:bg-paper-sunk"
+                          className="rounded-sm border border-rule px-2 py-1 text-xs text-ink-soft transition hover:bg-paper-sunk hover:text-ink"
                         >
                           Mark all read
                         </button>
                         <button
                           type="button"
                           onClick={() => setNotificationsOpen(false)}
-                          className="rounded-sm border border-rule-strong px-2 py-1 text-xs text-ink-soft transition hover:bg-paper-sunk"
+                          className="rounded-sm border border-rule px-2 py-1 text-xs text-ink-soft transition hover:bg-paper-sunk hover:text-ink"
                         >
                           Close
                         </button>
                       </div>
                     </div>
 
-                    {notificationsLoading ? <p className="text-sm text-ink-faint">Loading notifications…</p> : null}
-                    {notificationsError ? <p className="text-sm text-signal-danger">{notificationsError}</p> : null}
+                    <div className="p-2">
+                      {notificationsLoading ? <p className="px-1 py-2 text-sm text-ink-faint">Loading notifications…</p> : null}
+                      {notificationsError ? <p className="px-1 py-2 text-sm text-signal-danger">{notificationsError}</p> : null}
 
-                    {!notificationsLoading && notifications.length === 0 ? (
-                      <p className="py-4 text-center font-display text-sm italic text-ink-faint">No notifications yet.</p>
-                    ) : null}
+                      {!notificationsLoading && notifications.length === 0 ? (
+                        <p className="py-6 text-center text-sm text-ink-faint">No notifications yet.</p>
+                      ) : null}
 
-                    <div className="max-h-80 space-y-2 overflow-auto pr-1">
-                      {notifications.map((notification) => (
-                        <button
-                          key={notification.id}
-                          type="button"
-                          onClick={() => {
-                            void markNotificationAsRead(notification.id);
-                            setNotificationsOpen(false);
-                            router.push(`/editor/${notification.document_id}`);
-                          }}
-                          className={`w-full rounded-sm border px-2.5 py-2 text-left transition hover:border-ink ${notification.read_at ? "border-rule bg-paper-card" : "border-clay/40 bg-clay-wash/50"}`}
-                        >
-                          <div className="mb-1 flex items-center justify-between gap-2">
-                            <p className="eyebrow text-[0.6rem] text-clay">{notification.type === "mention" ? "Mention" : "Comment"}</p>
-                            <p className="text-[11px] text-ink-faint">{formatNotificationTime(notification.created_at)}</p>
-                          </div>
-                          <p className="text-sm text-ink-soft">{notification.message}</p>
-                        </button>
-                      ))}
+                      <div className="max-h-80 space-y-px overflow-auto">
+                        {notifications.map((notification) => (
+                          <button
+                            key={notification.id}
+                            type="button"
+                            onClick={() => {
+                              void markNotificationAsRead(notification.id);
+                              setNotificationsOpen(false);
+                              router.push(`/editor/${notification.document_id}`);
+                            }}
+                            className={`w-full rounded-sm px-2.5 py-2 text-left transition hover:bg-paper-sunk ${notification.read_at ? "" : "bg-clay-wash"}`}
+                          >
+                            <div className="mb-1 flex items-center justify-between gap-2">
+                              <span className="flex items-center gap-1.5">
+                                {notification.read_at ? null : <span className="h-1.5 w-1.5 rounded-full bg-clay" />}
+                                <span className="eyebrow text-[0.6rem] text-ink-soft">{notification.type === "mention" ? "Mention" : "Comment"}</span>
+                              </span>
+                              <span className="font-mono text-[10px] text-ink-ghost">{formatNotificationTime(notification.created_at)}</span>
+                            </div>
+                            <p className="text-sm text-ink-soft">{notification.message}</p>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 ) : null}
               </div>
 
-              <div className="flex items-center gap-2 rounded-sm border border-rule-strong bg-paper-card px-2 py-1.5">
+              <div className="flex items-center gap-2 rounded-sm border border-rule bg-paper px-2 py-1">
                 {user?.avatar_url ? (
                   <img
                     src={user.avatar_url}
                     alt={user.name ? `${user.name} avatar` : "User avatar"}
-                    className="h-7 w-7 rounded-sm object-cover"
+                    className="h-6 w-6 rounded-sm object-cover"
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="flex h-7 w-7 items-center justify-center rounded-sm bg-ink text-xs font-semibold text-paper">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-ink text-xs font-semibold text-paper">
                     {user?.name?.trim()?.charAt(0).toUpperCase() ?? "U"}
                   </div>
                 )}
@@ -420,14 +421,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 type="button"
                 onClick={handleLogout}
                 disabled={loggingOut}
-                className="rounded-sm border border-rule-strong bg-paper-card px-4 py-2 text-sm font-medium text-ink-soft transition hover:border-ink hover:text-ink disabled:opacity-60"
+                className="rounded-sm border border-rule bg-paper px-3 py-1.5 text-sm font-medium text-ink-soft transition hover:border-rule-strong hover:text-ink disabled:opacity-60"
               >
                 {loggingOut ? "Logging out…" : "Logout"}
               </button>
             </div>
           </header>
 
-          <main className="flex-1 px-4 py-8 md:px-10 md:py-10">{children}</main>
+          <main className="flex-1 px-4 py-8 md:px-10 md:py-12">{children}</main>
         </div>
       </div>
     </div>

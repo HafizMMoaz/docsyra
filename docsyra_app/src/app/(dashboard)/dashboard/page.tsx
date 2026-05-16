@@ -147,40 +147,38 @@ export default function DashboardPage() {
 
   return (
     <section className="mx-auto max-w-5xl space-y-10">
-      <div className="reveal flex flex-wrap items-end justify-between gap-4 border-b-2 border-ink pb-6">
+      <div className="reveal flex flex-wrap items-end justify-between gap-4 border-b border-rule pb-6">
         <div>
-          <p className="eyebrow">Workspace overview</p>
-          <h1 className="font-display mt-2 text-4xl font-semibold tracking-tight text-ink">Dashboard</h1>
-          <p className="mt-2 text-sm text-ink-faint">Usage, recent activity, and your latest documents.</p>
+          <p className="eyebrow text-ink-ghost">Workspace overview</p>
+          <h1 className="font-display mt-2 text-3xl font-bold tracking-tight text-ink">Dashboard</h1>
+          <p className="mt-1.5 text-sm text-ink-faint">Usage, recent activity, and your latest documents.</p>
         </div>
         <button
           type="button"
           onClick={handleCreateDocument}
           disabled={creating}
-          className="group inline-flex items-center gap-2 rounded-sm bg-ink px-5 py-3 text-sm font-medium text-paper transition hover:bg-clay disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-sm bg-ink px-4 py-2 text-sm font-medium text-paper transition hover:bg-ink-soft disabled:opacity-60"
         >
+          <span aria-hidden>+</span>
           {creating ? "Creating…" : "New document"}
-          <span className="transition-transform group-hover:translate-x-0.5" aria-hidden>
-            +
-          </span>
         </button>
       </div>
 
       {error ? (
-        <p className="rounded-sm border-l-2 border-signal-danger bg-clay-wash/60 px-3 py-2 text-sm text-signal-danger">
+        <p className="rounded-sm border border-signal-danger/30 bg-paper-sunk px-3 py-2 text-sm text-signal-danger">
           {error}
         </p>
       ) : null}
 
       {loading ? (
-        <div className="rounded-sm border border-rule-strong bg-paper-card p-12 text-center">
-          <p className="font-display text-base italic text-ink-faint">Gathering your documents…</p>
+        <div className="rounded-md border border-rule bg-paper p-12 text-center">
+          <p className="text-sm text-ink-faint">Gathering your documents…</p>
         </div>
       ) : null}
 
       {!loading && stats ? (
         <div
-          className="reveal grid gap-px overflow-hidden rounded-sm border border-rule-strong bg-rule-strong sm:grid-cols-3 xl:grid-cols-6"
+          className="reveal grid grid-cols-2 gap-px overflow-hidden rounded-md border border-rule bg-rule sm:grid-cols-3 xl:grid-cols-6"
           style={{ animationDelay: "80ms" }}
         >
           {[
@@ -191,9 +189,9 @@ export default function DashboardPage() {
             { label: "Collaborators", value: stats.collaborators },
             { label: "Recent logs", value: stats.recentActivityCount },
           ].map((item) => (
-            <div key={item.label} className="bg-paper-card p-4">
-              <p className="eyebrow text-[0.6rem]">{item.label}</p>
-              <p className="font-display mt-2 text-3xl font-semibold text-ink">{item.value}</p>
+            <div key={item.label} className="bg-paper px-4 py-5">
+              <p className="eyebrow text-[0.6rem] text-ink-ghost">{item.label}</p>
+              <p className="font-display mt-2 text-2xl font-bold tabular-nums text-ink">{item.value}</p>
             </div>
           ))}
         </div>
@@ -201,30 +199,30 @@ export default function DashboardPage() {
 
       {!loading && recentActivity.length > 0 ? (
         <div className="reveal" style={{ animationDelay: "140ms" }}>
-          <div className="mb-4 flex items-baseline gap-3">
-            <h2 className="font-display text-xl font-semibold text-ink">Recent activity</h2>
+          <div className="mb-3 flex items-baseline gap-3">
+            <h2 className="font-display text-base font-bold tracking-tight text-ink">Recent activity</h2>
             <span className="h-px flex-1 bg-rule" />
-            <span className="eyebrow text-[0.6rem]">Views · Edits · Joins</span>
+            <span className="eyebrow text-[0.6rem] text-ink-ghost">Views · Edits · Joins</span>
           </div>
 
-          <div className="space-y-px overflow-hidden rounded-sm border border-rule bg-rule">
+          <div className="overflow-hidden rounded-md border border-rule">
             {recentActivity.map((item) => (
               <div
                 key={item.id}
-                className="flex items-start justify-between gap-4 bg-paper-card px-4 py-3.5"
+                className="flex items-center justify-between gap-4 border-b border-rule bg-paper px-4 py-3 last:border-b-0"
               >
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 rounded-sm bg-paper-sunk px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-soft">
+                <div className="flex items-center gap-3">
+                  <span className="w-12 shrink-0 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
                     {item.action}
                   </span>
                   <div>
                     <p className="text-sm font-medium text-ink">{item.document_title || "Untitled"}</p>
-                    <p className="mt-0.5 text-xs text-ink-faint">
+                    <p className="text-xs text-ink-faint">
                       by {item.name || item.email || "Unknown user"}
                     </p>
                   </div>
                 </div>
-                <p className="shrink-0 text-xs text-ink-faint">{formatRelativeTime(item.created_at)}</p>
+                <p className="shrink-0 font-mono text-xs text-ink-ghost">{formatRelativeTime(item.created_at)}</p>
               </div>
             ))}
           </div>
@@ -233,34 +231,34 @@ export default function DashboardPage() {
 
       {!loading && documents.length > 0 ? (
         <div className="reveal" style={{ animationDelay: "200ms" }}>
-          <div className="mb-4 flex items-baseline gap-3">
-            <h2 className="font-display text-xl font-semibold text-ink">Recent documents</h2>
+          <div className="mb-3 flex items-baseline gap-3">
+            <h2 className="font-display text-base font-bold tracking-tight text-ink">Recent documents</h2>
             <span className="h-px flex-1 bg-rule" />
-            <span className="eyebrow text-[0.6rem]">Latest work</span>
+            <span className="eyebrow text-[0.6rem] text-ink-ghost">Latest work</span>
           </div>
-          <ul className="space-y-px overflow-hidden rounded-sm border border-rule-strong bg-rule">
+          <ul className="overflow-hidden rounded-md border border-rule">
             {documents.map((document, index) => (
-              <li key={document.id} className="bg-paper-card">
+              <li key={document.id} className="border-b border-rule last:border-b-0">
                 <button
                   type="button"
                   onClick={() => router.push(`/editor/${document.id}`)}
-                  className="group flex w-full items-center gap-4 px-4 py-4 text-left transition hover:bg-paper-sunk"
+                  className="group flex w-full items-center gap-4 bg-paper px-4 py-3 text-left transition hover:bg-paper-sunk"
                 >
-                  <span className="font-display text-sm text-ink-ghost">
+                  <span className="w-6 shrink-0 font-mono text-xs text-ink-ghost">
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-ink group-hover:text-clay">
                       {document.title || "Untitled"}
                     </p>
-                    <p className="mt-0.5 text-xs text-ink-faint">
+                    <p className="text-xs text-ink-faint">
                       Last updated {formatRelativeTime(document.updated_at)}
                     </p>
                   </div>
-                  <p className="hidden shrink-0 text-xs text-ink-faint sm:block">
+                  <p className="hidden shrink-0 font-mono text-xs text-ink-ghost sm:block">
                     {formatTimestamp(document.updated_at)}
                   </p>
-                  <span className="text-ink-ghost transition-transform group-hover:translate-x-0.5 group-hover:text-clay" aria-hidden>
+                  <span className="text-ink-ghost transition group-hover:translate-x-0.5 group-hover:text-clay" aria-hidden>
                     →
                   </span>
                 </button>
@@ -271,15 +269,16 @@ export default function DashboardPage() {
       ) : null}
 
       {!loading && documents.length === 0 ? (
-        <div className="reveal rounded-sm border border-dashed border-rule-strong bg-paper-card p-12 text-center">
-          <p className="font-display text-xl font-semibold text-ink">A blank page awaits</p>
-          <p className="mt-2 text-sm text-ink-faint">Create a new document to start writing.</p>
+        <div className="reveal rounded-md border border-dashed border-rule-strong bg-paper p-12 text-center">
+          <p className="font-display text-lg font-bold tracking-tight text-ink">A blank page awaits</p>
+          <p className="mt-1.5 text-sm text-ink-faint">Create a new document to start writing.</p>
           <button
             type="button"
             onClick={handleCreateDocument}
             disabled={creating}
-            className="mt-5 inline-flex items-center gap-2 rounded-sm bg-ink px-5 py-2.5 text-sm font-medium text-paper transition hover:bg-clay disabled:opacity-60"
+            className="mt-5 inline-flex items-center gap-1.5 rounded-sm bg-ink px-4 py-2 text-sm font-medium text-paper transition hover:bg-ink-soft disabled:opacity-60"
           >
+            <span aria-hidden>+</span>
             {creating ? "Creating…" : "New document"}
           </button>
         </div>

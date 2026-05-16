@@ -7,34 +7,25 @@ export default function NotFound() {
     <>
       <title>404 — This page could not be found</title>
       <main className="flex min-h-screen items-center justify-center px-6 py-16">
-        <section className="reveal w-full max-w-xl">
-          <p className="eyebrow">Errata · Page not found</p>
-          <div className="mt-5 flex items-end gap-5 border-b-2 border-ink pb-5">
-            <span className="font-display text-[7rem] font-semibold leading-none tracking-tighter text-clay">
-              404
-            </span>
-            <span className="font-display mb-2 text-2xl italic text-ink-faint">
-              missing leaf
-            </span>
-          </div>
-          <h1 className="font-display mt-6 text-3xl font-semibold tracking-tight text-ink">
+        <section className="reveal w-full max-w-md">
+          <p className="eyebrow text-clay">Error 404</p>
+          <h1 className="font-display mt-4 text-3xl font-bold tracking-tight text-ink">
             This page could not be found.
           </h1>
-          <p className="mt-3 max-w-md text-base leading-relaxed text-ink-soft">
-            The document you were looking for may have been moved, unshared, or never set to
-            paper. Let&apos;s return you to familiar ground.
+          <p className="mt-3 text-base leading-relaxed text-ink-soft">
+            The document you were looking for may have been moved, unshared, or
+            never created. Let&apos;s return you to familiar ground.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-8 flex flex-wrap gap-3 border-t border-rule pt-8">
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-2 rounded-sm bg-ink px-5 py-3 text-sm font-medium text-paper transition hover:bg-clay"
+              className="inline-flex items-center justify-center rounded-sm bg-ink px-5 py-3 text-sm font-medium text-paper transition hover:bg-ink-soft"
             >
               Back to dashboard
-              <span aria-hidden>→</span>
             </Link>
             <Link
               href="/"
-              className="inline-flex items-center rounded-sm border border-rule-strong bg-paper-card px-5 py-3 text-sm font-medium text-ink transition hover:border-ink"
+              className="inline-flex items-center justify-center rounded-sm border border-rule-strong bg-paper px-5 py-3 text-sm font-medium text-ink transition hover:bg-paper-sunk"
             >
               Home
             </Link>

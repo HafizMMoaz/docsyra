@@ -1,29 +1,26 @@
 export default function VerifyInvalidPage() {
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-16">
-      <section className="reveal w-full max-w-lg rounded-sm border border-rule-strong bg-paper-card p-8 shadow-[0_24px_60px_-32px_rgba(33,28,22,0.4)]">
-        <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-clay text-lg font-semibold text-paper">
-            !
-          </span>
-          <p className="eyebrow" style={{ color: "var(--clay)" }}>
-            Verification failed
-          </p>
+      <section className="reveal w-full max-w-md rounded-md border border-rule bg-paper p-8">
+        <div className="flex items-center gap-2.5">
+          <span className="h-2 w-2 rounded-full bg-signal-danger" />
+          <p className="eyebrow text-signal-danger">Verification failed</p>
         </div>
-        <h1 className="font-display mt-5 text-3xl font-semibold tracking-tight text-ink">
+        <h1 className="font-display mt-4 text-2xl font-bold tracking-tight text-ink">
           This link is no longer valid.
         </h1>
         <p className="mt-3 text-base leading-relaxed text-ink-soft">
-          The verification link may have expired or already been used. Request a fresh one from
-          your account settings and we&apos;ll send another.
+          The verification link may have expired or already been used. Request a
+          fresh one from your account settings and we&apos;ll send another.
         </p>
-        <a
-          href="/dashboard/settings"
-          className="mt-7 inline-flex items-center gap-2 rounded-sm bg-ink px-5 py-3 text-sm font-medium text-paper transition hover:bg-clay"
-        >
-          Go to settings
-          <span aria-hidden>→</span>
-        </a>
+        <div className="mt-7 border-t border-rule pt-7">
+          <a
+            href="/dashboard/settings"
+            className="inline-flex items-center justify-center rounded-sm bg-ink px-5 py-3 text-sm font-medium text-paper transition hover:bg-ink-soft"
+          >
+            Go to settings
+          </a>
+        </div>
       </section>
     </main>
   );

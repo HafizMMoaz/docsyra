@@ -147,32 +147,32 @@ export default function OnboardingPage() {
   if (loadingSession) {
     return (
       <main className="flex min-h-screen items-center justify-center px-4 text-sm text-ink-faint">
-        <span className="font-display italic">Checking session…</span>
+        <span className="eyebrow">Checking session</span>
       </main>
     );
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-12">
+    <main className="flex min-h-screen items-center justify-center bg-paper px-4 py-12">
       <div className="reveal w-full max-w-xl">
         <div className="mb-6 flex items-center gap-3">
-          <span className="font-display text-2xl font-semibold tracking-tight text-ink">Docsyra</span>
+          <span className="font-display text-xl font-bold tracking-tight text-ink">Docsyra</span>
           <span className="h-3.5 w-px bg-rule-strong" />
-          <span className="eyebrow">First-run setup</span>
+          <span className="eyebrow text-ink-ghost">First-run setup</span>
         </div>
 
-        <div className="rounded-sm border border-rule-strong bg-paper-card p-7 shadow-[0_28px_70px_-40px_rgba(33,28,22,0.45)]">
-          <div className="border-b-2 border-ink pb-5">
-            <p className="eyebrow text-clay">Step one of one</p>
-            <h1 className="font-display mt-2 text-3xl font-semibold tracking-tight text-ink">
+        <div className="overflow-hidden rounded-md border border-rule bg-paper">
+          <div className="border-b border-rule px-7 py-6">
+            <p className="eyebrow text-clay">Step 01 / 01</p>
+            <h1 className="font-display mt-2 text-2xl font-bold tracking-tight text-ink">
               Complete your profile
             </h1>
-            <p className="mt-2 text-sm text-ink-faint">
+            <p className="mt-1.5 text-sm text-ink-faint">
               A few details so we can personalize your workspace.
             </p>
           </div>
 
-          <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
+          <form className="space-y-5 px-7 py-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="name" className="eyebrow mb-1.5 block">
                 Name
@@ -182,7 +182,7 @@ export default function OnboardingPage() {
                 type="text"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition focus:border-clay"
+                className="w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-2.5 text-sm text-ink outline-none transition focus:border-clay"
                 required
                 disabled={submitting}
               />
@@ -199,7 +199,7 @@ export default function OnboardingPage() {
                 onChange={(event) => setProfession(event.target.value)}
                 list="profession-options"
                 placeholder="Search or select profession"
-                className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                className="w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
                 disabled={submitting}
               />
               <datalist id="profession-options">
@@ -213,7 +213,7 @@ export default function OnboardingPage() {
                   value={professionOther}
                   onChange={(event) => setProfessionOther(event.target.value)}
                   placeholder="Type your profession"
-                  className="mt-2 w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                  className="mt-2 w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
                   disabled={submitting}
                 />
               ) : null}
@@ -230,7 +230,7 @@ export default function OnboardingPage() {
                 onChange={(event) => setIndustry(event.target.value)}
                 list="industry-options"
                 placeholder="Search or select industry"
-                className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                className="w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
                 disabled={submitting}
               />
               <datalist id="industry-options">
@@ -244,7 +244,7 @@ export default function OnboardingPage() {
                   value={industryOther}
                   onChange={(event) => setIndustryOther(event.target.value)}
                   placeholder="Type your industry"
-                  className="mt-2 w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                  className="mt-2 w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
                   disabled={submitting}
                 />
               ) : null}
@@ -261,7 +261,7 @@ export default function OnboardingPage() {
                 onChange={(event) => setCountry(event.target.value)}
                 list="country-options"
                 placeholder="Search and select country"
-                className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                className="w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
                 disabled={submitting}
               />
               <datalist id="country-options">
@@ -272,7 +272,7 @@ export default function OnboardingPage() {
             </div>
 
             {error ? (
-              <p className="rounded-sm border-l-2 border-signal-danger bg-clay-wash/60 px-3 py-2 text-sm text-signal-danger">
+              <p className="rounded-sm border border-signal-danger/30 bg-paper-sunk px-3 py-2 text-sm text-signal-danger">
                 {error}
               </p>
             ) : null}
@@ -280,10 +280,10 @@ export default function OnboardingPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="group flex w-full items-center justify-center gap-2 rounded-sm bg-ink px-4 py-3.5 text-sm font-medium text-paper transition hover:bg-clay disabled:opacity-60"
+              className="group flex w-full items-center justify-center gap-2 rounded-sm bg-ink px-4 py-3 text-sm font-medium text-paper transition hover:bg-ink-soft disabled:opacity-60"
             >
               {submitting ? "Saving…" : "Continue to workspace"}
-              <span className="transition-transform group-hover:translate-x-1" aria-hidden>
+              <span className="transition-transform group-hover:translate-x-0.5" aria-hidden>
                 →
               </span>
             </button>

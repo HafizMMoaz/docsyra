@@ -909,11 +909,11 @@ export default function RichTextEditor({
   }
 
   if (!editor) {
-    return <div className="min-h-100 rounded-sm border border-rule-strong bg-paper-card p-4 font-display text-sm italic text-ink-faint">Loading editor…</div>;
+    return <div className="min-h-100 rounded-sm border border-rule bg-paper-card p-4 text-sm text-ink-faint">Loading editor…</div>;
   }
 
   return (
-    <div className="rounded-sm border border-rule-strong bg-paper-card">
+    <div className="rounded-sm border border-rule bg-paper-card">
       <input
         ref={fileInputRef}
         type="file"
@@ -961,7 +961,7 @@ export default function RichTextEditor({
 
       {aiSelection ? (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-ink/30 px-4 pt-[18vh] backdrop-blur-[1px]"
+          className="fixed inset-0 z-50 flex items-start justify-center bg-ink/45 px-4 pt-[18vh] backdrop-blur-[2px]"
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
@@ -989,7 +989,7 @@ export default function RichTextEditor({
 
       {aiGenerate ? (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-ink/30 px-4 pt-[18vh] backdrop-blur-[1px]"
+          className="fixed inset-0 z-50 flex items-start justify-center bg-ink/45 px-4 pt-[18vh] backdrop-blur-[2px]"
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
@@ -1028,7 +1028,7 @@ export default function RichTextEditor({
         return (
           <div
             key={`presence-overlay-${overlay.id}`}
-            className={`pointer-events-none fixed z-30 rounded-sm px-2 py-0.5 text-[11px] font-semibold text-white shadow ${overlay.dimmed ? "opacity-35" : "opacity-90"} ${isHighlighted ? "ring-2 ring-clay opacity-100" : ""}`}
+            className={`pointer-events-none fixed z-30 rounded-sm px-2 py-0.5 text-[11px] font-semibold text-white ${overlay.dimmed ? "opacity-35" : "opacity-90"} ${isHighlighted ? "ring-2 ring-clay opacity-100" : ""}`}
             style={{
               left: overlay.x,
               top: overlay.y,

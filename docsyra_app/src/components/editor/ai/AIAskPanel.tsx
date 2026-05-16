@@ -141,7 +141,7 @@ export default function AIAskPanel({ documentText, onInsert, onClose }: AIAskPan
       transition={{ duration: 0.2, ease: "easeOut" }}
       role="dialog"
       aria-label="Summarize and ask about the document"
-      className="flex h-full w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-sm border border-rule-strong bg-paper-card shadow-[0_28px_64px_-24px_rgba(33,28,22,0.5)]"
+      className="flex h-full w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-sm border border-rule bg-paper-card shadow-lg"
     >
       {/* Header */}
       <div className="flex items-center justify-between gap-3 border-b border-rule px-4 py-3">

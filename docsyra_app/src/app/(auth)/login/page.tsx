@@ -422,70 +422,27 @@ function LoginPageContent() {
   }
 
   return (
-    <main className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
-      {/* Editorial side panel */}
-      <aside className="reveal-fade relative hidden flex-col justify-between overflow-hidden bg-ink p-12 text-paper lg:flex xl:p-16">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-60"
-          style={{
-            backgroundImage:
-              "radial-gradient(ellipse 50% 40% at 80% 10%, rgba(180,80,42,0.28), transparent 70%)",
-          }}
-        />
-        <div className="relative flex items-baseline gap-3">
-          <span className="font-display text-2xl font-semibold tracking-tight">Docsyra</span>
-          <span className="h-3.5 w-px bg-paper/30" />
-          <span className="eyebrow text-clay-soft">The Document Workspace</span>
-        </div>
-
-        <div className="relative">
-          <p className="eyebrow text-clay-soft">Welcome back</p>
-          <h2 className="font-display mt-5 text-5xl font-semibold leading-[1.06] tracking-tight xl:text-6xl">
-            Pick up exactly where the ink dried.
-          </h2>
-          <p className="mt-6 max-w-md text-base leading-relaxed text-paper-sunk">
-            Your documents, comments, and collaborators are waiting — a calm surface
-            for writing together.
-          </p>
-        </div>
-
-        <div className="relative space-y-px overflow-hidden rounded-sm border border-paper/15">
-          {[
-            ["Live presence", "See cursors and edits as they happen"],
-            ["Threaded comments", "Discuss right on the passage"],
-            ["GitHub sync", "Keep prose and repo in step"],
-          ].map(([title, text]) => (
-            <div key={title} className="flex items-baseline gap-3 bg-paper/[0.04] px-4 py-3">
-              <span className="font-display text-clay-soft">—</span>
-              <div>
-                <p className="text-sm font-semibold text-paper">{title}</p>
-                <p className="text-xs text-paper-sunk">{text}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </aside>
-
+    <main className="grid min-h-screen bg-paper lg:grid-cols-[1fr_1.05fr]">
       {/* Auth form */}
-      <div className="flex items-center justify-center px-5 py-10 sm:px-10">
-        <section className="reveal w-full max-w-md">
-          <div className="mb-8 flex items-baseline gap-3 lg:hidden">
-            <span className="font-display text-2xl font-semibold tracking-tight text-ink">Docsyra</span>
+      <div className="order-2 flex items-center justify-center border-rule px-5 py-12 sm:px-10 lg:order-1 lg:border-r">
+        <section className="w-full max-w-sm">
+          <div className="mb-10 flex items-center gap-3 lg:hidden">
+            <span className="font-display text-xl font-bold tracking-tight text-ink">Docsyra</span>
           </div>
 
-          <p className="eyebrow">Account access</p>
-          <h1 className="font-display mt-3 text-4xl font-semibold tracking-tight text-ink">
+          <p className="eyebrow text-clay">Account access</p>
+          <h1 className="font-display mt-3 text-3xl font-bold tracking-tight text-ink">
             Sign in to continue
           </h1>
           <p className="mt-2 text-sm text-ink-faint">
             Use a social provider, a passkey, or your email below.
           </p>
 
-          <div className="mt-7 space-y-2.5">
+          <div className="mt-8 grid gap-px overflow-hidden rounded-sm border border-rule-strong">
             <button
               type="button"
               onClick={handleGoogleClick}
-              className="flex w-full items-center justify-center gap-2.5 rounded-sm border border-rule-strong bg-paper-card px-4 py-3 text-sm font-medium text-ink transition hover:border-ink"
+              className="flex w-full items-center justify-center gap-2.5 bg-paper px-4 py-3 text-sm font-medium text-ink transition hover:bg-paper-sunk"
             >
               <FaGoogle className="h-4 w-4" />
               Continue with Google
@@ -494,7 +451,7 @@ function LoginPageContent() {
             <button
               type="button"
               onClick={handleGithubClick}
-              className="flex w-full items-center justify-center gap-2.5 rounded-sm border border-rule-strong bg-paper-card px-4 py-3 text-sm font-medium text-ink transition hover:border-ink"
+              className="flex w-full items-center justify-center gap-2.5 bg-paper px-4 py-3 text-sm font-medium text-ink transition hover:bg-paper-sunk"
             >
               <FaGithub className="h-4 w-4" />
               Continue with GitHub
@@ -503,7 +460,7 @@ function LoginPageContent() {
             <button
               type="button"
               onClick={handlePasskeyLogin}
-              className="flex w-full items-center justify-center gap-2.5 rounded-sm border border-rule-strong bg-paper-card px-4 py-3 text-sm font-medium text-ink transition hover:border-ink disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2.5 bg-paper px-4 py-3 text-sm font-medium text-ink transition hover:bg-paper-sunk disabled:opacity-50"
               disabled={passkeyLoading || loading || twoFactorRequired}
             >
               <FaKey className="h-4 w-4" />
@@ -511,13 +468,13 @@ function LoginPageContent() {
             </button>
           </div>
 
-          <div className="my-6 flex items-center gap-3">
+          <div className="my-7 flex items-center gap-3">
             <div className="h-px flex-1 bg-rule" />
-            <span className="eyebrow">or by email</span>
+            <span className="eyebrow text-ink-faint">or by email</span>
             <div className="h-px flex-1 bg-rule" />
           </div>
 
-          <div className="mb-4 flex gap-1 rounded-sm border border-rule-strong bg-paper-sunk p-1">
+          <div className="mb-5 grid grid-cols-2 rounded-sm border border-rule-strong">
             <button
               type="button"
               onClick={() => {
@@ -527,7 +484,7 @@ function LoginPageContent() {
                 setError(null);
                 setMessage(null);
               }}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-sm px-3 py-2 text-xs font-semibold transition ${authMode === "password" ? "bg-ink text-paper" : "text-ink-soft hover:bg-paper-card"}`}
+              className={`flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-semibold transition ${authMode === "password" ? "bg-ink text-paper" : "bg-paper text-ink-soft hover:bg-paper-sunk"}`}
               disabled={loading}
             >
               <FaLock className="h-3 w-3" />
@@ -543,7 +500,7 @@ function LoginPageContent() {
                 setError(null);
                 setMessage(null);
               }}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-sm px-3 py-2 text-xs font-semibold transition ${authMode === "otp" ? "bg-ink text-paper" : "text-ink-soft hover:bg-paper-card"}`}
+              className={`flex items-center justify-center gap-2 border-l border-rule-strong px-3 py-2.5 text-xs font-semibold transition ${authMode === "otp" ? "bg-ink text-paper" : "bg-paper text-ink-soft hover:bg-paper-sunk"}`}
               disabled={loading}
             >
               <FaEnvelope className="h-3 w-3" />
@@ -552,7 +509,7 @@ function LoginPageContent() {
           </div>
 
           <form
-            className="space-y-3"
+            className="space-y-4"
             onSubmit={
               twoFactorRequired
                 ? handleValidateTwoFactor
@@ -568,8 +525,8 @@ function LoginPageContent() {
             }
           >
             {!twoFactorRequired ? (
-              <>
-                <label htmlFor="email" className="eyebrow block">
+              <div className="space-y-1.5">
+                <label htmlFor="email" className="eyebrow block text-ink-faint">
                   Email
                 </label>
                 <input
@@ -578,10 +535,10 @@ function LoginPageContent() {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="you@example.com"
-                  className="w-full rounded-sm border border-rule-strong bg-paper-card px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay disabled:bg-paper-sunk disabled:text-ink-faint"
+                  className="w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay focus:ring-1 focus:ring-clay disabled:bg-paper-sunk disabled:text-ink-faint"
                   disabled={loading || (authMode === "password" ? step !== "email" : otpStep === "code")}
                 />
-              </>
+              </div>
             ) : null}
 
             {!twoFactorRequired && (authMode === "password" ? step !== "email" : otpStep !== "email") ? (
@@ -607,8 +564,8 @@ function LoginPageContent() {
             ) : null}
 
             {!twoFactorRequired && authMode === "password" && (step === "login" || step === "register") ? (
-              <>
-                <label htmlFor="password" className="eyebrow block">
+              <div className="space-y-1.5">
+                <label htmlFor="password" className="eyebrow block text-ink-faint">
                   Password
                 </label>
                 <input
@@ -617,15 +574,15 @@ function LoginPageContent() {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   placeholder="Enter your password"
-                  className="w-full rounded-sm border border-rule-strong bg-paper-card px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                  className="w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay focus:ring-1 focus:ring-clay"
                   disabled={loading}
                 />
-              </>
+              </div>
             ) : null}
 
             {!twoFactorRequired && authMode === "password" && step === "register" ? (
-              <>
-                <label htmlFor="confirm-password" className="eyebrow block">
+              <div className="space-y-1.5">
+                <label htmlFor="confirm-password" className="eyebrow block text-ink-faint">
                   Confirm Password
                 </label>
                 <input
@@ -634,15 +591,15 @@ function LoginPageContent() {
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
                   placeholder="Retype your password"
-                  className="w-full rounded-sm border border-rule-strong bg-paper-card px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                  className="w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay focus:ring-1 focus:ring-clay"
                   disabled={loading}
                 />
-              </>
+              </div>
             ) : null}
 
             {!twoFactorRequired && authMode === "otp" && otpStep === "code" ? (
-              <>
-                <label htmlFor="otp-code" className="eyebrow block">
+              <div className="space-y-1.5">
+                <label htmlFor="otp-code" className="eyebrow block text-ink-faint">
                   One-time code
                 </label>
                 <input
@@ -651,16 +608,16 @@ function LoginPageContent() {
                   value={otpCode}
                   onChange={(event) => setOtpCode(event.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
                   placeholder="123456"
-                  className="w-full rounded-sm border border-rule-strong bg-paper-card px-3.5 py-3 font-mono text-base tracking-[0.4em] text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                  className="w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-3 font-mono text-base tracking-[0.4em] text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay focus:ring-1 focus:ring-clay"
                   disabled={loading}
                   inputMode="numeric"
                 />
-              </>
+              </div>
             ) : null}
 
             {twoFactorRequired ? (
-              <>
-                <label htmlFor="two-factor-code" className="eyebrow block">
+              <div className="space-y-1.5">
+                <label htmlFor="two-factor-code" className="eyebrow block text-ink-faint">
                   Authenticator or backup code
                 </label>
                 <input
@@ -669,25 +626,25 @@ function LoginPageContent() {
                   value={twoFactorCode}
                   onChange={(event) => setTwoFactorCode(event.target.value.trim().toUpperCase())}
                   placeholder="123456 or BACKUPCODE"
-                  className="w-full rounded-sm border border-rule-strong bg-paper-card px-3.5 py-3 font-mono text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                  className="w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-3 font-mono text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay focus:ring-1 focus:ring-clay"
                   disabled={loading}
                 />
-              </>
+              </div>
             ) : null}
 
             {error ? (
-              <p className="rounded-sm border-l-2 border-signal-danger bg-clay-wash/60 px-3 py-2 text-sm text-signal-danger">
+              <p className="rounded-sm border border-signal-danger border-l-2 bg-paper px-3 py-2 text-sm text-signal-danger">
                 {error}
               </p>
             ) : null}
             {message ? (
-              <p className="rounded-sm border-l-2 border-rule-strong bg-paper-sunk px-3 py-2 text-sm text-ink-soft">
+              <p className="rounded-sm border border-rule border-l-2 border-l-clay bg-paper-sunk px-3 py-2 text-sm text-ink-soft">
                 {message}
               </p>
             ) : null}
             <button
               type="submit"
-              className="group flex w-full items-center justify-center gap-2 rounded-sm bg-ink px-4 py-3.5 text-sm font-medium text-paper transition hover:bg-clay disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-sm bg-ink px-4 py-3.5 text-sm font-medium text-paper transition hover:bg-ink-soft disabled:opacity-60"
               disabled={loading}
             >
               {loading
@@ -706,11 +663,50 @@ function LoginPageContent() {
           </button>
           </form>
 
-          <p className="mt-6 text-center text-xs text-ink-faint">
+          <p className="mt-6 text-xs text-ink-ghost">
             By continuing you agree to keep your documents tidy.
           </p>
         </section>
       </div>
+
+      {/* Brand panel */}
+      <aside className="order-1 hidden flex-col justify-between bg-ink px-12 py-12 text-paper lg:order-2 lg:flex xl:px-16">
+        <div className="flex items-center gap-3">
+          <span className="font-display text-xl font-bold tracking-tight text-paper">Docsyra</span>
+          <span className="h-3 w-px bg-paper/25" />
+          <span className="eyebrow text-paper/55">The Document Workspace</span>
+        </div>
+
+        <div>
+          <p className="eyebrow text-clay">Welcome back</p>
+          <h2 className="font-display mt-5 text-4xl font-bold leading-[1.08] tracking-tight text-paper xl:text-5xl">
+            Pick up exactly where the ink dried.
+          </h2>
+          <p className="mt-5 max-w-md text-sm leading-relaxed text-paper/65">
+            Your documents, comments, and collaborators are waiting — a calm surface
+            for writing together.
+          </p>
+        </div>
+
+        <div className="border-t border-paper/15">
+          {[
+            ["01", "Live presence", "See cursors and edits as they happen"],
+            ["02", "Threaded comments", "Discuss right on the passage"],
+            ["03", "GitHub sync", "Keep prose and repo in step"],
+          ].map(([index, title, text]) => (
+            <div
+              key={title}
+              className="flex items-baseline gap-4 border-b border-paper/15 py-4"
+            >
+              <span className="eyebrow text-clay">{index}</span>
+              <div>
+                <p className="text-sm font-semibold text-paper">{title}</p>
+                <p className="mt-0.5 text-xs text-paper/55">{text}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </aside>
     </main>
   );
 }
