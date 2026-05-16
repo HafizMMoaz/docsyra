@@ -11,6 +11,8 @@ import { getSession } from "@/lib/auth/session-client";
 import { generateDiff } from "@/lib/diff/generateDiff";
 import type { User } from "@/types";
 import RichTextEditor from "@/components/editor/RichTextEditor";
+import AIAskPanel from "@/components/editor/ai/AIAskPanel";
+import type { Editor } from "@tiptap/core";
 
 type DocumentDetail = {
   id: string;
@@ -301,6 +303,7 @@ export default function EditorPage() {
   const [collaboratorsLoading, setCollaboratorsLoading] = useState(false);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [ownerId, setOwnerId] = useState<string | null>(null);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [logsOpen, setLogsOpen] = useState(false);
   const [logsLoading, setLogsLoading] = useState(false);
   const [logsError, setLogsError] = useState<string | null>(null);
@@ -346,6 +349,7 @@ export default function EditorPage() {
   const wsRef = useRef<WebSocket | null>(null);
   const awarenessRef = useRef<Awareness | null>(null);
   const isSavingRef = useRef(false);
+  const editorInstanceRef = useRef<Editor | null>(null);
 
   function publishPresenceUpdate(update: { cursor?: { anchor: number; head: number } | null; typing?: boolean; contextLabel?: string | null }) {
     const awareness = awarenessRef.current;
@@ -2146,6 +2150,18 @@ export default function EditorPage() {
                 {githubLinked ? "Manage GitHub link" : "Link GitHub repo"}
               </button>
             ) : null}
+            <button
+              type="button"
+              onClick={() => setAiPanelOpen((current) => !current)}
+              aria-pressed={aiPanelOpen}
+              className={`rounded-sm border px-3 py-2 text-sm font-medium transition ${
+                aiPanelOpen
+                  ? "border-clay bg-clay-wash text-clay"
+                  : "border-rule-strong bg-paper-card text-ink-soft hover:border-ink hover:text-ink"
+              }`}
+            >
+              ✦ Ask AI
+            </button>
             {accessRole === "owner" ? (
               <button
                 type="button"
@@ -2269,6 +2285,9 @@ export default function EditorPage() {
               <RichTextEditor
                 value={content}
                 onChange={handleContentChange}
+                onEditorReady={(editorInstance) => {
+                  editorInstanceRef.current = editorInstance;
+                }}
                 onCommentSelectionChange={setSelectedCommentRange}
                 onPresenceStateChange={publishPresenceUpdate}
                 highlightedPresenceId={highlightedPresenceId}
@@ -3119,6 +3138,31 @@ export default function EditorPage() {
               )}
             </div>
           </div>
+        </div>
+      ) : null}
+
+      {aiPanelOpen ? (
+        <div className="fixed inset-y-0 right-0 z-50 flex max-w-full p-4">
+          <AIAskPanel
+            documentText={editorInstanceRef.current?.getText() ?? content}
+            onClose={() => setAiPanelOpen(false)}
+            onInsert={
+              canEdit
+                ? (text) => {
+                    const editorInstance = editorInstanceRef.current;
+                    if (!editorInstance) {
+                      return;
+                    }
+                    const endPos = editorInstance.state.doc.content.size;
+                    editorInstance
+                      .chain()
+                      .focus()
+                      .insertContentAt(endPos, `\n\n${text}`)
+                      .run();
+                  }
+                : undefined
+            }
+          />
         </div>
       ) : null}
     </main>

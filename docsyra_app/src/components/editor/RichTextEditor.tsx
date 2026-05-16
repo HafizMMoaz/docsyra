@@ -32,6 +32,8 @@ import { ResizableImage } from "@/components/editor/extensions/ResizableImage";
 import { Callout } from "@/components/editor/extensions/Callout";
 import { CodeBlockWithActions } from "@/components/editor/extensions/CodeBlockWithActions";
 import { CommentMark } from "@/components/editor/extensions/CommentMark";
+import AISelectionMenu from "@/components/editor/ai/AISelectionMenu";
+import AIGenerateMenu from "@/components/editor/ai/AIGenerateMenu";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 
 const lowlight = createLowlight(common);
@@ -90,6 +92,12 @@ type RichTextEditorProps = {
       color: string;
     };
   };
+  /**
+   * Fired once the TipTap editor instance is created (and again with `null`
+   * when it is torn down). Lets the page reach editor commands — e.g. to feed
+   * the AI "Ask the document" panel and insert its results.
+   */
+  onEditorReady?: (editor: Editor | null) => void;
 };
 
 function cleanImages(html: string): string {
@@ -235,6 +243,7 @@ export default function RichTextEditor({
   pendingCommentAnchor,
   activeCommentThreadId,
   collaboration,
+  onEditorReady,
 }: RichTextEditorProps) {
   const markdownToHtml = useMemo(() => {
     marked.setOptions({
@@ -268,6 +277,10 @@ export default function RichTextEditor({
   const [isDocumentEmpty, setIsDocumentEmpty] = useState((value || "").trim().length === 0);
   const [recentCommands, setRecentCommands] = useState<string[]>([]);
   const [commandStats, setCommandStats] = useState<Record<string, number>>({});
+  /** Open "Ask AI" selection menu — holds the captured range it operates on. */
+  const [aiSelection, setAiSelection] = useState<{ from: number; to: number; text: string } | null>(null);
+  /** Open "/ai" generate menu — holds the cursor position to insert at. */
+  const [aiGenerate, setAiGenerate] = useState<{ pos: number; documentText: string } | null>(null);
 
   const getContextLabel = useCallback((nextEditor: Editor): string | null => {
     const { $anchor } = nextEditor.state.selection;
@@ -346,6 +359,18 @@ export default function RichTextEditor({
     };
 
     return [
+      {
+        group: "AI",
+        icon: "✦",
+        title: "Ask AI",
+        description: "Generate or continue writing with AI",
+        run: run("Ask AI", (editor) => {
+          setAiGenerate({
+            pos: editor.state.selection.from,
+            documentText: editor.getText(),
+          });
+        }),
+      },
       {
         group: "Basic",
         icon: "T",
@@ -436,7 +461,7 @@ export default function RichTextEditor({
         run: run("Table", (editor) => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()),
       },
     ];
-  }, [rememberCommand]);
+  }, [rememberCommand, setAiGenerate]);
 
   const slashExtension = useMemo(
     () => SlashCommand({ commands: slashCommands, recentCommands, commandStats }),
@@ -546,7 +571,8 @@ export default function RichTextEditor({
 
   useEffect(() => {
     editorRef.current = editor ?? null;
-  }, [editor]);
+    onEditorReady?.(editor ?? null);
+  }, [editor, onEditorReady]);
 
   useEffect(() => {
     if (!editor) {
@@ -903,6 +929,23 @@ export default function RichTextEditor({
       {editor && !disabled ? (
         <BubbleMenu editor={editor}>
           <div className="bubble-menu">
+            <button
+              type="button"
+              className="bubble-menu-ai"
+              onClick={() => {
+                const { from, to } = editor.state.selection;
+                if (from === to) {
+                  return;
+                }
+                setAiSelection({
+                  from,
+                  to,
+                  text: editor.state.doc.textBetween(from, to, " "),
+                });
+              }}
+            >
+              ✦ Ask AI
+            </button>
             <button type="button" onClick={() => editor.chain().focus().toggleBold().run()}>
               B
             </button>
@@ -914,6 +957,65 @@ export default function RichTextEditor({
             </button>
           </div>
         </BubbleMenu>
+      ) : null}
+
+      {aiSelection ? (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center bg-ink/30 px-4 pt-[18vh] backdrop-blur-[1px]"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setAiSelection(null);
+            }
+          }}
+        >
+          <AISelectionMenu
+            selectedText={aiSelection.text}
+            onApply={(text) => {
+              const editorInstance = editorRef.current;
+              if (!editorInstance) {
+                return;
+              }
+              editorInstance
+                .chain()
+                .focus()
+                .insertContentAt({ from: aiSelection.from, to: aiSelection.to }, text)
+                .run();
+            }}
+            onClose={() => setAiSelection(null)}
+          />
+        </div>
+      ) : null}
+
+      {aiGenerate ? (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center bg-ink/30 px-4 pt-[18vh] backdrop-blur-[1px]"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setAiGenerate(null);
+            }
+          }}
+        >
+          <AIGenerateMenu
+            autoFocus
+            documentText={aiGenerate.documentText}
+            onInsert={(text) => {
+              const editorInstance = editorRef.current;
+              if (!editorInstance) {
+                return;
+              }
+              const docSize = editorInstance.state.doc.content.size;
+              const insertPos = Math.max(1, Math.min(aiGenerate.pos, docSize));
+              editorInstance
+                .chain()
+                .focus()
+                .insertContentAt(insertPos, text)
+                .run();
+            }}
+            onClose={() => setAiGenerate(null)}
+          />
+        </div>
       ) : null}
 
       {isDocumentEmpty ? (
