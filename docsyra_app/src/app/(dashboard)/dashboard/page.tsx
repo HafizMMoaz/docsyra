@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getCsrfToken } from "@/lib/security/csrf-client";
 
 type OverviewDocument = {
@@ -64,6 +64,9 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  // Hard re-entry guard — survives across renders, unlike the `creating` state
+  // which only gates the button after React has re-rendered it.
+  const creatingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -119,6 +122,12 @@ export default function DashboardPage() {
   }, []);
 
   async function handleCreateDocument() {
+    // Block concurrent creates: a slow first-time navigation to /editor/[id]
+    // would otherwise let repeated clicks each create a new document.
+    if (creatingRef.current) {
+      return;
+    }
+    creatingRef.current = true;
     setCreating(true);
     setError(null);
 
@@ -134,13 +143,18 @@ export default function DashboardPage() {
 
       if (!response.ok || !data.success || !data.id) {
         setError(data.error ?? "Failed to create document");
+        creatingRef.current = false;
+        setCreating(false);
         return;
       }
 
+      // Success — navigate, and deliberately keep `creating` true so the
+      // button stays disabled until this page unmounts. Resetting it here
+      // would re-enable the button during a slow route transition.
       router.push(`/editor/${data.id}`);
     } catch {
       setError("Failed to create document");
-    } finally {
+      creatingRef.current = false;
       setCreating(false);
     }
   }
