@@ -146,127 +146,149 @@ export default function OnboardingPage() {
 
   if (loadingSession) {
     return (
-      <main className="min-h-screen bg-slate-50 px-4 py-10 text-sm text-slate-500">
-        Checking session...
+      <main className="flex min-h-screen items-center justify-center px-4 text-sm text-ink-faint">
+        <span className="font-display italic">Checking session…</span>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-10">
-      <div className="mx-auto w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Complete your profile</h1>
-        <p className="mt-1 text-sm text-slate-500">This helps personalize your Docsyra workspace.</p>
+    <main className="flex min-h-screen items-center justify-center px-4 py-12">
+      <div className="reveal w-full max-w-xl">
+        <div className="mb-6 flex items-center gap-3">
+          <span className="font-display text-2xl font-semibold tracking-tight text-ink">Docsyra</span>
+          <span className="h-3.5 w-px bg-rule-strong" />
+          <span className="eyebrow">First-run setup</span>
+        </div>
 
-        <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="name" className="mb-1 block text-sm font-medium text-slate-700">
-              Name
-            </label>
-            <input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-              required
-              disabled={submitting}
-            />
+        <div className="rounded-sm border border-rule-strong bg-paper-card p-7 shadow-[0_28px_70px_-40px_rgba(33,28,22,0.45)]">
+          <div className="border-b-2 border-ink pb-5">
+            <p className="eyebrow text-clay">Step one of one</p>
+            <h1 className="font-display mt-2 text-3xl font-semibold tracking-tight text-ink">
+              Complete your profile
+            </h1>
+            <p className="mt-2 text-sm text-ink-faint">
+              A few details so we can personalize your workspace.
+            </p>
           </div>
 
-          <div>
-            <label htmlFor="profession" className="mb-1 block text-sm font-medium text-slate-700">
-              Profession
-            </label>
-            <input
-              id="profession"
-              type="text"
-              value={profession}
-              onChange={(event) => setProfession(event.target.value)}
-              list="profession-options"
-              placeholder="Search or select profession"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-              disabled={submitting}
-            />
-            <datalist id="profession-options">
-              {PROFESSION_OPTIONS.map((option) => (
-                <option key={option} value={option} />
-              ))}
-            </datalist>
-            {profession === "Other" ? (
+          <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
+            <div>
+              <label htmlFor="name" className="eyebrow mb-1.5 block">
+                Name
+              </label>
               <input
+                id="name"
                 type="text"
-                value={professionOther}
-                onChange={(event) => setProfessionOther(event.target.value)}
-                placeholder="Type your profession"
-                className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition focus:border-clay"
+                required
                 disabled={submitting}
               />
-            ) : null}
-          </div>
+            </div>
 
-          <div>
-            <label htmlFor="industry" className="mb-1 block text-sm font-medium text-slate-700">
-              Industry
-            </label>
-            <input
-              id="industry"
-              type="text"
-              value={industry}
-              onChange={(event) => setIndustry(event.target.value)}
-              list="industry-options"
-              placeholder="Search or select industry"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-              disabled={submitting}
-            />
-            <datalist id="industry-options">
-              {INDUSTRY_OPTIONS.map((option) => (
-                <option key={option} value={option} />
-              ))}
-            </datalist>
-            {industry === "Other" ? (
+            <div>
+              <label htmlFor="profession" className="eyebrow mb-1.5 block">
+                Profession
+              </label>
               <input
+                id="profession"
                 type="text"
-                value={industryOther}
-                onChange={(event) => setIndustryOther(event.target.value)}
-                placeholder="Type your industry"
-                className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                value={profession}
+                onChange={(event) => setProfession(event.target.value)}
+                list="profession-options"
+                placeholder="Search or select profession"
+                className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
                 disabled={submitting}
               />
+              <datalist id="profession-options">
+                {PROFESSION_OPTIONS.map((option) => (
+                  <option key={option} value={option} />
+                ))}
+              </datalist>
+              {profession === "Other" ? (
+                <input
+                  type="text"
+                  value={professionOther}
+                  onChange={(event) => setProfessionOther(event.target.value)}
+                  placeholder="Type your profession"
+                  className="mt-2 w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                  disabled={submitting}
+                />
+              ) : null}
+            </div>
+
+            <div>
+              <label htmlFor="industry" className="eyebrow mb-1.5 block">
+                Industry
+              </label>
+              <input
+                id="industry"
+                type="text"
+                value={industry}
+                onChange={(event) => setIndustry(event.target.value)}
+                list="industry-options"
+                placeholder="Search or select industry"
+                className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                disabled={submitting}
+              />
+              <datalist id="industry-options">
+                {INDUSTRY_OPTIONS.map((option) => (
+                  <option key={option} value={option} />
+                ))}
+              </datalist>
+              {industry === "Other" ? (
+                <input
+                  type="text"
+                  value={industryOther}
+                  onChange={(event) => setIndustryOther(event.target.value)}
+                  placeholder="Type your industry"
+                  className="mt-2 w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                  disabled={submitting}
+                />
+              ) : null}
+            </div>
+
+            <div>
+              <label htmlFor="country" className="eyebrow mb-1.5 block">
+                Country
+              </label>
+              <input
+                id="country"
+                type="text"
+                value={country}
+                onChange={(event) => setCountry(event.target.value)}
+                list="country-options"
+                placeholder="Search and select country"
+                className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                disabled={submitting}
+              />
+              <datalist id="country-options">
+                {COUNTRY_OPTIONS.map((option) => (
+                  <option key={option} value={option} />
+                ))}
+              </datalist>
+            </div>
+
+            {error ? (
+              <p className="rounded-sm border-l-2 border-signal-danger bg-clay-wash/60 px-3 py-2 text-sm text-signal-danger">
+                {error}
+              </p>
             ) : null}
-          </div>
 
-          <div>
-            <label htmlFor="country" className="mb-1 block text-sm font-medium text-slate-700">
-              Country
-            </label>
-            <input
-              id="country"
-              type="text"
-              value={country}
-              onChange={(event) => setCountry(event.target.value)}
-              list="country-options"
-              placeholder="Search and select country"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+            <button
+              type="submit"
               disabled={submitting}
-            />
-            <datalist id="country-options">
-              {COUNTRY_OPTIONS.map((option) => (
-                <option key={option} value={option} />
-              ))}
-            </datalist>
-          </div>
-
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
-          >
-            {submitting ? "Saving..." : "Continue"}
-          </button>
-        </form>
+              className="group flex w-full items-center justify-center gap-2 rounded-sm bg-ink px-4 py-3.5 text-sm font-medium text-paper transition hover:bg-clay disabled:opacity-60"
+            >
+              {submitting ? "Saving…" : "Continue to workspace"}
+              <span className="transition-transform group-hover:translate-x-1" aria-hidden>
+                →
+              </span>
+            </button>
+          </form>
+        </div>
       </div>
     </main>
   );

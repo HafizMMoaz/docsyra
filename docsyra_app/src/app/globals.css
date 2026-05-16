@@ -1,82 +1,262 @@
 @import "tailwindcss";
 
+/* ===========================================================================
+   DOCSYRA — "Archival Print" design system
+   Ink-on-paper editorial aesthetic for a collaborative document workspace.
+   - Display:  Fraunces (optical serif, characterful)
+   - Body:     Spline Sans
+   - Mono:     Spline Sans Mono
+   Palette: warm paper grounds, near-black ink, a single clay/ochre accent.
+   =========================================================================== */
+
 :root {
-  --background: #f7f6f3;
-  --foreground: #1f2937;
-  --font-geist-sans: "Inter", "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-geist-mono: "Cascadia Mono", "Cascadia Code", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  /* Paper grounds */
+  --paper: #f4f0e6;
+  --paper-raised: #fbf9f2;
+  --paper-sunk: #ece6d6;
+  --paper-card: #fffdf8;
+
+  /* Ink */
+  --ink: #211c16;
+  --ink-soft: #4a4338;
+  --ink-faint: #847a68;
+  --ink-ghost: #b3a991;
+
+  /* Accent — clay / ochre */
+  --clay: #b4502a;
+  --clay-soft: #c87a52;
+  --clay-wash: #f0dcc9;
+
+  /* Secondary — archive teal (used sparingly for presence / live states) */
+  --pine: #2f5d52;
+  --pine-wash: #d8e4df;
+
+  /* Functional signal colors, tuned warm */
+  --signal-danger: #9c3024;
+  --signal-warn: #9a6b16;
+  --signal-ok: #3a6b4f;
+
+  /* Lines */
+  --rule: #ddd4bf;
+  --rule-strong: #c8bd9f;
+
+  /* Tailwind bridge tokens */
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --font-geist-sans: var(--font-body), "Spline Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-geist-mono: var(--font-mono), "Spline Sans Mono", "SFMono-Regular", Menlo, Consolas, monospace;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-paper-sunk: var(--paper-sunk);
+  --color-paper-card: var(--paper-card);
+
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-ink-ghost: var(--ink-ghost);
+
+  --color-clay: var(--clay);
+  --color-clay-soft: var(--clay-soft);
+  --color-clay-wash: var(--clay-wash);
+
+  --color-pine: var(--pine);
+  --color-pine-wash: var(--pine-wash);
+
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+
+  --color-signal-danger: var(--signal-danger);
+  --color-signal-warn: var(--signal-warn);
+  --color-signal-ok: var(--signal-ok);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #f7f6f3;
-    --foreground: #1f2937;
-  }
+  --font-display: var(--font-display), Georgia, "Times New Roman", serif;
 }
 
 * {
   transition-property: color, background-color, border-color, box-shadow, opacity, transform;
-  transition-duration: 0.15s;
-  transition-timing-function: ease;
+  transition-duration: 0.18s;
+  transition-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+html,
+body {
+  background: var(--paper);
 }
 
 body {
-  background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.9), transparent 34%),
-    linear-gradient(180deg, #fbfbfa 0%, #f7f6f3 100%);
+  /* Subtle paper grain + soft top-light atmosphere */
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(ellipse 60% 40% at 15% 0%, rgba(255, 253, 246, 0.85), transparent 70%),
+    radial-gradient(ellipse 50% 50% at 100% 100%, rgba(180, 80, 42, 0.05), transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
   background-attachment: fixed;
-  color: var(--foreground);
+  color: var(--ink);
   font-family: var(--font-geist-sans);
+  font-feature-settings: "ss01", "cv01";
+  -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: rgba(15, 23, 42, 0.1);
-  color: #111827;
+  background: var(--clay-wash);
+  color: var(--ink);
 }
 
+/* Display utility — Fraunces with editorial optical settings */
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+  font-optical-sizing: auto;
+  letter-spacing: -0.018em;
+}
+
+.eyebrow {
+  font-family: var(--font-geist-sans);
+  font-size: 0.6875rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+
+/* Focus ring — warm, consistent */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--clay);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ---------------------------------------------------------------------------
+   Page-load reveal choreography
+   --------------------------------------------------------------------------- */
+@keyframes ink-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ink-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes seam-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.reveal {
+  opacity: 0;
+  animation: ink-rise 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+.reveal-fade {
+  opacity: 0;
+  animation: ink-fade 0.8s ease forwards;
+}
+
+.seam {
+  transform-origin: left;
+  animation: seam-draw 0.9s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal-fade,
+  .seam {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   EDITOR / PROSEMIRROR — functional styles (selectors must be preserved)
+   Restyled to the Archival Print aesthetic.
+   --------------------------------------------------------------------------- */
 .ProseMirror {
   margin: 0 auto;
   min-height: 70vh;
-    max-width: 1200px;
+  max-width: 1200px;
   outline: none;
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: var(--ink-soft);
 }
 
 .ProseMirror p {
   margin: 8px 0;
   min-height: 1.7em;
-  color: #333;
+  color: var(--ink-soft);
 }
 
 .ProseMirror h1 {
-  margin: 24px 0 12px;
-  font-size: 2rem;
-  line-height: 1.2;
-  font-weight: 700;
+  margin: 26px 0 12px;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 2.1rem;
+  line-height: 1.18;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
 }
 
 .ProseMirror h2 {
-  margin: 20px 0 10px;
-  font-size: 1.5rem;
+  margin: 22px 0 10px;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.55rem;
   line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+
+.ProseMirror h3 {
+  margin: 18px 0 8px;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--ink);
 }
 
 .ProseMirror blockquote {
   margin: 16px 0;
-  border-left: 3px solid #d4d4d8;
-  padding-left: 16px;
-  color: #52525b;
+  border-left: 3px solid var(--clay);
+  padding-left: 18px;
+  color: var(--ink-faint);
+  font-style: italic;
+  font-family: var(--font-display), Georgia, serif;
 }
 
 .ProseMirror ul,
 .ProseMirror ol {
   padding-left: 1.5rem;
+}
+
+.ProseMirror a {
+  color: var(--clay);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
 }
 
 .ProseMirror img {
@@ -106,34 +286,34 @@ body {
 }
 
 .image-toolbar button {
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--rule-strong);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.95);
-  color: #1e293b;
+  background: var(--paper-card);
+  color: var(--ink);
   font-size: 12px;
   line-height: 1;
   padding: 6px 8px;
 }
 
 .image-toolbar .image-delete {
-  color: #b91c1c;
+  color: var(--signal-danger);
 }
 
 .image-wrapper img {
   display: block;
   max-width: 100%;
-  border-radius: 6px;
+  border-radius: 4px;
   transition: box-shadow 0.15s ease;
 }
 
 .image-wrapper:hover img {
-  box-shadow: 0 0 0 2px #3b82f6;
+  box-shadow: 0 0 0 2px var(--clay);
 }
 
 .resize-handle {
   width: 10px;
   height: 10px;
-  background: #111;
+  background: var(--ink);
   position: absolute;
   right: 0;
   bottom: 30px;
@@ -151,32 +331,50 @@ body {
   width: 100%;
   border: none;
   text-align: center;
-  color: #666;
+  color: var(--ink-faint);
   font-size: 13px;
   padding: 6px 4px 0;
   outline: none;
   background: transparent;
+  font-style: italic;
 }
 
 .image-wrapper .image-caption::placeholder {
-  color: #aaa;
+  color: var(--ink-ghost);
 }
 
 .ProseMirror hr,
 hr {
   border: none;
-  border-top: 1px solid #ddd;
-  margin: 20px 0;
+  border-top: 1px solid var(--rule);
+  margin: 22px 0;
 }
 
 .ProseMirror pre,
 pre {
-  background: #0f172a;
-  color: #e2e8f0;
-  padding: 14px;
-  border-radius: 8px;
+  background: #1f1a14;
+  color: #ece6d6;
+  padding: 16px;
+  border-radius: 6px;
   overflow-x: auto;
-  font-size: 14px;
+  font-size: 13.5px;
+  font-family: var(--font-geist-mono);
+  border: 1px solid #2c251c;
+}
+
+.ProseMirror code {
+  font-family: var(--font-geist-mono);
+  font-size: 0.875em;
+  background: var(--paper-sunk);
+  border-radius: 3px;
+  padding: 0.1em 0.34em;
+  color: var(--clay);
+}
+
+.ProseMirror pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
 }
 
 .code-block-wrapper {
@@ -191,33 +389,43 @@ pre {
 }
 
 .code-block-language {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--ink-faint);
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
 .code-copy-button {
-  border: 1px solid #334155;
-  background: #111827;
-  color: #e2e8f0;
-  border-radius: 6px;
-  padding: 4px 8px;
-  font-size: 12px;
+  border: 1px solid #3a3127;
+  background: #2a231b;
+  color: #ece6d6;
+  border-radius: 5px;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 [data-callout] {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: flex-start;
-  background: #f5f5f5;
-  padding: 10px;
-  border-left: 4px solid #999;
-  border-radius: 6px;
+  background: var(--clay-wash);
+  padding: 12px 14px;
+  border-left: 3px solid var(--clay);
+  border-radius: 4px;
+  color: var(--ink-soft);
 }
 
 [data-callout]::before {
-  content: "💡";
+  content: "›";
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--clay);
+  line-height: 1.4;
 }
 
 .block-wrapper {
@@ -241,15 +449,15 @@ pre {
 }
 
 .block-wrapper:hover::after {
-  background: #3b82f6;
+  background: var(--clay);
 }
 
 .block-wrapper:focus-within {
-  background: rgba(0, 0, 0, 0.02);
+  background: rgba(33, 28, 22, 0.025);
 }
 
 .block-wrapper.selected {
-  background: rgba(59, 130, 246, 0.05);
+  background: rgba(180, 80, 42, 0.06);
 }
 
 .block-controls {
@@ -273,6 +481,7 @@ pre {
   cursor: pointer;
   font-size: 16px;
   line-height: 1;
+  color: var(--ink-faint);
   opacity: 0;
   transform: translateX(-6px);
   transition: opacity 0.15s ease, transform 0.15s ease;
@@ -292,7 +501,7 @@ pre {
   cursor: grab;
   font-size: 12px;
   line-height: 1;
-  color: #64748b;
+  color: var(--ink-faint);
   transition: opacity 0.15s ease;
 }
 
@@ -307,25 +516,27 @@ pre {
 .drag-preview-line,
 .ProseMirror .ProseMirror-dropcursor {
   height: 2px;
-  background: #3b82f6;
+  background: var(--clay);
 }
 
 .comment-mark {
-  background: rgba(250, 204, 21, 0.35);
-  border-radius: 3px;
+  background: rgba(180, 80, 42, 0.16);
+  border-bottom: 2px solid rgba(180, 80, 42, 0.5);
+  border-radius: 2px;
   cursor: pointer;
 }
 
 .comment-mark:hover {
-  background: rgba(255, 200, 0, 0.6);
+  background: rgba(180, 80, 42, 0.28);
 }
 
 .comment-mark.comment-mark-active {
-  background: rgba(251, 191, 36, 0.7);
+  background: rgba(180, 80, 42, 0.34);
+  border-bottom-color: var(--clay);
 }
 
 .collaboration-cursor__caret {
-  border-left: 2px solid var(--cursor-color, #2563eb);
+  border-left: 2px solid var(--cursor-color, #2f5d52);
   border-right: 0;
   margin-left: -1px;
   pointer-events: none;
@@ -333,8 +544,8 @@ pre {
 }
 
 .collaboration-cursor__label {
-  background: var(--cursor-color, #2563eb);
-  border-radius: 4px;
+  background: var(--cursor-color, #2f5d52);
+  border-radius: 3px;
   color: #ffffff;
   font-size: 11px;
   font-weight: 600;
@@ -348,18 +559,17 @@ pre {
 }
 
 .collaboration-cursor__selection {
-  background: color-mix(in srgb, var(--cursor-color, #2563eb) 26%, transparent);
+  background: color-mix(in srgb, var(--cursor-color, #2f5d52) 24%, transparent);
   border-radius: 2px;
 }
 
 .comments-sidebar {
   width: 100%;
-  border-left: 1px solid #e2e8f0;
 }
 
 .ProseMirror p.is-empty::before,
 .ProseMirror p.is-editor-empty:first-child::before {
-  color: #aaa;
+  color: var(--ink-ghost);
   content: attr(data-placeholder);
   float: left;
   height: 0;
@@ -368,11 +578,20 @@ pre {
 
 .slash-menu {
   min-width: 240px;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background: #ffffff;
+  border: 1px solid var(--rule-strong);
+  border-radius: 8px;
+  background: var(--paper-card);
   padding: 6px;
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 22px 48px rgba(33, 28, 22, 0.18);
+}
+
+.slash-hint {
+  padding: 8px 10px 6px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 600;
 }
 
 .slash-icon {
@@ -381,15 +600,15 @@ pre {
   justify-content: center;
   min-width: 28px;
   height: 28px;
-  border-radius: 8px;
-  background: #eef2ff;
-  color: #334155;
+  border-radius: 5px;
+  background: var(--paper-sunk);
+  color: var(--ink-soft);
   font-size: 11px;
   font-weight: 700;
 }
 
 .slash-icon.active {
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--clay);
   color: #ffffff;
 }
 
@@ -398,20 +617,19 @@ pre {
   flex-direction: column;
   gap: 4px;
   cursor: pointer;
-  border-radius: 8px;
-  padding: 6px 10px;
-  color: #334155;
-  transition: background 0.15s ease, color 0.15s ease;
+  border-radius: 6px;
+  padding: 7px 10px;
+  color: var(--ink-soft);
+  transition: background 0.12s ease, color 0.12s ease;
 }
 
 .slash-item:hover {
-  background: #f5f5f5;
+  background: var(--paper-sunk);
 }
 
 .slash-item.active {
-  background: #e5e7eb;
-  border-radius: 6px;
-  color: #0f172a;
+  background: var(--clay-wash);
+  color: var(--ink);
 }
 
 .notifications-bell-pulse {
@@ -420,17 +638,17 @@ pre {
 
 @keyframes notificationsBellPulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.45);
+    box-shadow: 0 0 0 0 rgba(156, 48, 36, 0.45);
     transform: scale(1);
   }
 
   45% {
-    box-shadow: 0 0 0 10px rgba(225, 29, 72, 0);
+    box-shadow: 0 0 0 10px rgba(156, 48, 36, 0);
     transform: scale(1.035);
   }
 
   100% {
-    box-shadow: 0 0 0 0 rgba(225, 29, 72, 0);
+    box-shadow: 0 0 0 0 rgba(156, 48, 36, 0);
     transform: scale(1);
   }
 }
@@ -438,42 +656,45 @@ pre {
 .slash-group {
   padding: 10px 10px 4px;
   font-size: 11px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: var(--ink-faint);
   font-weight: 600;
 }
 
 .slash-description {
-  color: #64748b;
+  color: var(--ink-faint);
   font-size: 12px;
 }
 
 .slash-description.active {
-  color: #334155;
+  color: var(--ink-soft);
 }
 
 .empty-doc-hint {
   margin: 8px auto 0;
-    max-width: 1200px;
+  max-width: 1200px;
   padding: 0 24px;
+  font-family: var(--font-display), Georgia, serif;
+  font-style: italic;
+  color: var(--ink-ghost);
 }
 
 .bubble-menu {
   display: flex;
   align-items: center;
-  gap: 6px;
-  border-radius: 999px;
-  background: #111827;
-  padding: 6px;
-  color: #ffffff;
-  box-shadow: 0 14px 30px rgba(17, 24, 39, 0.24);
+  gap: 4px;
+  border-radius: 6px;
+  background: var(--ink);
+  padding: 5px;
+  color: var(--paper);
+  box-shadow: 0 16px 32px rgba(33, 28, 22, 0.32);
 }
 
 .bubble-menu button {
-  min-width: 36px;
+  min-width: 34px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 4px;
   background: transparent;
   color: inherit;
   padding: 6px 10px;
@@ -484,16 +705,38 @@ pre {
 }
 
 .bubble-menu button:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(244, 240, 230, 0.16);
 }
 
 .diff-add {
-  background: #d4f8d4;
-  color: #065f46;
+  background: #d4e6d8;
+  color: var(--signal-ok);
 }
 
 .diff-remove {
-  background: #ffd6d6;
-  color: #7f1d1d;
+  background: #ecd3cf;
+  color: var(--signal-danger);
   text-decoration: line-through;
+}
+
+/* Slim, paper-toned scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--rule-strong);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-ghost);
+  background-clip: padding-box;
 }

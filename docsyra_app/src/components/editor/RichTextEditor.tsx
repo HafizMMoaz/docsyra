@@ -883,11 +883,11 @@ export default function RichTextEditor({
   }
 
   if (!editor) {
-    return <div className="min-h-100 rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">Loading editor...</div>;
+    return <div className="min-h-100 rounded-sm border border-rule-strong bg-paper-card p-4 font-display text-sm italic text-ink-faint">Loading editor…</div>;
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="rounded-sm border border-rule-strong bg-paper-card">
       <input
         ref={fileInputRef}
         type="file"
@@ -898,7 +898,7 @@ export default function RichTextEditor({
         }}
       />
 
-      {editorError ? <p className="px-4 pt-2 text-sm text-red-600">{editorError}</p> : null}
+      {editorError ? <p className="px-4 pt-2 text-sm text-signal-danger">{editorError}</p> : null}
 
       {editor && !disabled ? (
         <BubbleMenu editor={editor}>
@@ -926,7 +926,7 @@ export default function RichTextEditor({
         return (
           <div
             key={`presence-overlay-${overlay.id}`}
-            className={`pointer-events-none fixed z-30 rounded-full px-2 py-0.5 text-[11px] font-semibold text-white shadow ${overlay.dimmed ? "opacity-35" : "opacity-90"} ${isHighlighted ? "ring-2 ring-sky-300 opacity-100" : ""}`}
+            className={`pointer-events-none fixed z-30 rounded-sm px-2 py-0.5 text-[11px] font-semibold text-white shadow ${overlay.dimmed ? "opacity-35" : "opacity-90"} ${isHighlighted ? "ring-2 ring-clay opacity-100" : ""}`}
             style={{
               left: overlay.x,
               top: overlay.y,

@@ -1,58 +1,46 @@
+import Link from "next/link";
+
 export const runtime = "edge";
 
 export default function NotFound() {
   return (
     <>
-      <title>404: This page could not be found.</title>
-      <div style={styles.error}>
-        <div>
-          <style
-            dangerouslySetInnerHTML={{
-              __html: `body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}`,
-            }}
-          />
-          <h1 className="next-error-h1" style={styles.h1}>
-            404
-          </h1>
-          <div style={styles.desc}>
-            <h2 style={styles.h2}>This page could not be found.</h2>
+      <title>404 — This page could not be found</title>
+      <main className="flex min-h-screen items-center justify-center px-6 py-16">
+        <section className="reveal w-full max-w-xl">
+          <p className="eyebrow">Errata · Page not found</p>
+          <div className="mt-5 flex items-end gap-5 border-b-2 border-ink pb-5">
+            <span className="font-display text-[7rem] font-semibold leading-none tracking-tighter text-clay">
+              404
+            </span>
+            <span className="font-display mb-2 text-2xl italic text-ink-faint">
+              missing leaf
+            </span>
           </div>
-        </div>
-      </div>
+          <h1 className="font-display mt-6 text-3xl font-semibold tracking-tight text-ink">
+            This page could not be found.
+          </h1>
+          <p className="mt-3 max-w-md text-base leading-relaxed text-ink-soft">
+            The document you were looking for may have been moved, unshared, or never set to
+            paper. Let&apos;s return you to familiar ground.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 rounded-sm bg-ink px-5 py-3 text-sm font-medium text-paper transition hover:bg-clay"
+            >
+              Back to dashboard
+              <span aria-hidden>→</span>
+            </Link>
+            <Link
+              href="/"
+              className="inline-flex items-center rounded-sm border border-rule-strong bg-paper-card px-5 py-3 text-sm font-medium text-ink transition hover:border-ink"
+            >
+              Home
+            </Link>
+          </div>
+        </section>
+      </main>
     </>
   );
 }
-
-const styles = {
-  error: {
-    fontFamily:
-      'system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji"',
-    height: "100vh",
-    textAlign: "center",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  desc: {
-    display: "inline-block",
-  },
-
-  h1: {
-    display: "inline-block",
-    margin: "0 20px 0 0",
-    padding: "0 23px 0 0",
-    fontSize: 24,
-    fontWeight: 500,
-    verticalAlign: "top",
-    lineHeight: "49px",
-  },
-
-  h2: {
-    fontSize: 14,
-    fontWeight: 400,
-    lineHeight: "49px",
-    margin: 0,
-  },
-} as const;

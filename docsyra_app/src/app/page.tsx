@@ -1,143 +1,206 @@
 import Link from "next/link";
 import { FaEnvelope, FaGithub, FaLinkedin, FaDiscord, FaTwitter } from "react-icons/fa";
 
+const ledger = [
+  { no: "01", label: "Real-time", value: "Yjs + awareness" },
+  { no: "02", label: "Comments", value: "Threads + anchors" },
+  { no: "03", label: "Sync", value: "GitHub connected" },
+];
+
+const features = [
+  {
+    title: "Live collaboration",
+    text: "Presence, cursor awareness, and threaded comments — see everyone on the page.",
+  },
+  {
+    title: "Project memory",
+    text: "Documents, activity logs, versions, and notifications stay close at hand.",
+  },
+  {
+    title: "Sharing controls",
+    text: "Owners invite collaborators, set roles, and govern visibility per document.",
+  },
+  {
+    title: "GitHub sync",
+    text: "Link documents to repository paths and keep prose and code in step.",
+  },
+];
+
+const contacts = [
+  { label: "Email", value: "hafizmoazkhalid@gmail.com", icon: FaEnvelope, href: undefined as string | undefined },
+  { label: "GitHub", value: "HafizMMoaz", href: "https://github.com/HafizMMoaz", icon: FaGithub },
+  { label: "LinkedIn", value: "hafizmmoaz", href: "https://www.linkedin.com/in/hafizmmoaz", icon: FaLinkedin },
+  { label: "Discord", value: "hafizmmoaz", icon: FaDiscord, href: undefined as string | undefined },
+  { label: "Twitter / X", value: "hafizmmoaz", href: "https://x.com/hafizmmoaz", icon: FaTwitter },
+];
+
 export default function Home() {
   return (
-    <div className="min-h-screen bg-slate-50 lg:h-screen lg:overflow-hidden">
-      <main className="flex min-h-screen w-full flex-col lg:h-full">
-        <section className="flex flex-1 flex-col lg:flex-row bg-white/80 lg:h-full lg:overflow-hidden">
-          <div className="relative flex flex-1 flex-col justify-center p-6 sm:p-10 lg:p-16 xl:p-20 lg:overflow-y-auto">
-            <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.95),transparent_40%),linear-gradient(135deg,rgba(15,23,42,0.04),rgba(255,255,255,0))]" />
+    <div className="min-h-screen">
+      <main className="mx-auto w-full max-w-[1320px] px-5 py-6 sm:px-8 lg:px-12 lg:py-10">
+        {/* Masthead */}
+        <header className="reveal flex flex-wrap items-end justify-between gap-4 border-b-2 border-ink pb-5">
+          <div className="flex items-baseline gap-3">
+            <span className="font-display text-3xl font-semibold tracking-tight text-ink">Docsyra</span>
+            <span className="hidden h-4 w-px bg-rule-strong sm:block" />
+            <span className="eyebrow hidden sm:block">The Collaborative Document Workspace</span>
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            <span className="eyebrow hidden md:block">Vol. 1 — Edition 2026</span>
+            <Link
+              href="/login"
+              className="rounded-sm border border-ink px-4 py-2 font-medium text-ink transition hover:bg-ink hover:text-paper"
+            >
+              Open Docsyra
+            </Link>
+          </div>
+        </header>
 
-            <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-              <span className="h-2 w-2 rounded-full bg-sky-500" />
-              Docsyra
+        <div className="grid gap-10 pt-10 lg:grid-cols-[1.62fr_1fr] lg:gap-14">
+          {/* Lead column */}
+          <section>
+            <p className="reveal eyebrow" style={{ animationDelay: "60ms" }}>
+              Collaborative documents · comments · presence · sync
+            </p>
+
+            <h1
+              className="reveal font-display mt-5 text-[2.65rem] font-semibold leading-[1.04] tracking-tight text-ink sm:text-6xl xl:text-[4.6rem]"
+              style={{ animationDelay: "120ms" }}
+            >
+              A focused workspace for{" "}
+              <span className="italic text-clay">writing</span>,{" "}
+              collaborating, and shipping documents.
+            </h1>
+
+            <p
+              className="reveal mt-6 max-w-2xl text-lg leading-relaxed text-ink-soft"
+              style={{ animationDelay: "200ms" }}
+            >
+              Docsyra draws a clean editor, live collaboration, threaded comments, notifications,
+              sharing, and GitHub sync into one quiet, fast surface — the kind of tool that
+              disappears so the work can show.
+            </p>
+
+            <div
+              className="reveal mt-8 flex flex-wrap items-center gap-3"
+              style={{ animationDelay: "280ms" }}
+            >
+              <Link
+                href="/login"
+                className="group inline-flex items-center gap-2 rounded-sm bg-ink px-6 py-3.5 text-base font-medium text-paper transition hover:bg-clay"
+              >
+                Open Docsyra
+                <span className="transition-transform group-hover:translate-x-1">→</span>
+              </Link>
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center justify-center rounded-sm border border-rule-strong bg-paper-card px-6 py-3.5 text-base font-medium text-ink transition hover:border-ink"
+              >
+                View dashboard
+              </Link>
             </div>
 
-            <div className="mt-8 max-w-3xl space-y-5">
-              <div className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700">
-                Collaborative documents, comments, presence, and sync
-              </div>
-              <div className="space-y-4">
-                <h1 className="text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl xl:text-7xl">
-                  A focused workspace for writing, collaborating, and shipping documents.
-                </h1>
-                <p className="max-w-2xl text-base leading-7 text-slate-600 sm:text-lg lg:text-xl">
-                  Docsyra combines a clean editor, live collaboration, threaded comments, notifications,
-                  sharing, and GitHub sync into one fast workspace.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3 pt-3">
-                <Link
-                  href="/login"
-                  className="inline-flex items-center justify-center rounded-xl bg-slate-950 px-6 py-3 text-base font-semibold text-white transition hover:bg-slate-800"
-                >
-                  Open Docsyra
-                </Link>
-                <Link
-                  href="/dashboard"
-                  className="inline-flex items-center justify-center rounded-xl border border-black/10 bg-white px-6 py-3 text-base font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  View dashboard
-                </Link>
-              </div>
-            </div>
-
-            <div className="mt-12 grid gap-4 sm:grid-cols-3 max-w-3xl">
-              {[
-                { label: "Real-time", value: "Yjs + awareness" },
-                { label: "Comments", value: "Threads + anchors" },
-                { label: "Sync", value: "GitHub connected" },
-              ].map((item) => (
-                <div key={item.label} className="rounded-2xl border border-black/10 bg-white/80 p-4 shadow-sm">
-                  <p className="text-xs uppercase tracking-wide text-slate-500">{item.label}</p>
-                  <p className="mt-1 text-base font-semibold text-slate-900">{item.value}</p>
+            {/* Ledger of capabilities */}
+            <div
+              className="reveal mt-12 grid gap-px overflow-hidden rounded-sm border border-rule-strong bg-rule-strong sm:grid-cols-3"
+              style={{ animationDelay: "340ms" }}
+            >
+              {ledger.map((item) => (
+                <div key={item.label} className="bg-paper-card p-5">
+                  <div className="flex items-baseline justify-between">
+                    <p className="eyebrow">{item.label}</p>
+                    <span className="font-display text-sm text-ink-ghost">{item.no}</span>
+                  </div>
+                  <p className="font-display mt-2 text-xl font-semibold text-ink">{item.value}</p>
                 </div>
               ))}
             </div>
 
-            <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-2 max-w-4xl border-t border-black/5 pt-10">
-              {[
-                {
-                  title: "Live collaboration",
-                  text: "Presence, cursor awareness, and threaded comments.",
-                },
-                {
-                  title: "Project memory",
-                  text: "Documents, logs, versions, and notifications stay visible.",
-                },
-                {
-                  title: "Sharing controls",
-                  text: "Owners can invite collaborators, manage visibility and access.",
-                },
-                {
-                  title: "GitHub sync",
-                  text: "Documents can be linked to repository paths and synced.",
-                },
-              ].map((item) => (
-                <article key={item.title} className="rounded-2xl border border-black/5 bg-white/50 p-5 shadow-sm">
-                  <h3 className="text-sm font-semibold text-slate-950">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">{item.text}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-
-          <aside className="border-t border-black/10 bg-slate-50 p-8 sm:p-12 lg:w-[480px] xl:w-[500px] lg:border-l lg:border-t-0 lg:p-12 flex flex-col justify-center lg:overflow-y-auto">
-            <div className="space-y-8">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">About the author</p>
-                <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Hafiz Muhammad Moaz</h2>
-                <p className="mt-4 text-base leading-7 text-slate-600">
-                  I am the author of this codebase. Docsyra is my collaborative document workspace built
-                  around clarity, speed, and practical product workflow.
-                </p>
-              </div>
-
-              <div className="grid gap-3">
-                {[
-                  { label: "Email", value: "hafizmoazkhalid@gmail.com", icon: FaEnvelope },
-                  { label: "GitHub", value: "HafizMMoaz", href: "https://github.com/HafizMMoaz", icon: FaGithub },
-                  { label: "LinkedIn", value: "hafizmmoaz", href: "https://www.linkedin.com/in/hafizmmoaz", icon: FaLinkedin },
-                  { label: "Discord", value: "hafizmmoaz", icon: FaDiscord },
-                  { label: "Twitter / X", value: "hafizmmoaz", href: "https://x.com/hafizmmoaz", icon: FaTwitter },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-center rounded-2xl border border-black/10 bg-white p-4 shadow-sm transition-all hover:shadow-md">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 mr-4">
-                      <item.icon className="h-5 w-5" />
-                    </div>
+            {/* Feature register */}
+            <div
+              className="reveal mt-12 border-t border-rule pt-8"
+              style={{ animationDelay: "400ms" }}
+            >
+              <p className="eyebrow mb-6">In this edition</p>
+              <div className="grid gap-x-10 gap-y-8 sm:grid-cols-2">
+                {features.map((item, index) => (
+                  <article key={item.title} className="flex gap-4">
+                    <span className="font-display select-none text-2xl font-semibold leading-none text-clay">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
                     <div>
-                      <p className="text-xs uppercase tracking-wide text-slate-500">{item.label}</p>
-                      {item.href ? (
-                        <a
-                          href={item.href}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-1 block text-sm font-semibold text-slate-900 transition hover:text-sky-700"
-                        >
-                          {item.value}
-                        </a>
-                      ) : (
-                        <p className="mt-1 text-sm font-semibold text-slate-900">{item.value}</p>
-                      )}
+                      <h3 className="font-display text-lg font-semibold text-ink">{item.title}</h3>
+                      <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">{item.text}</p>
                     </div>
-                  </div>
+                  </article>
                 ))}
               </div>
+            </div>
+          </section>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-900 p-6 text-white shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-300">What it includes</p>
-                <ul className="mt-5 space-y-3 text-sm text-slate-200">
-                  <li className="flex items-center before:content-[''] before:w-1.5 before:h-1.5 before:bg-sky-400 before:mr-3 before:rounded-full">Rich text editor with comments and presence</li>
-                  <li className="flex items-center before:content-[''] before:w-1.5 before:h-1.5 before:bg-sky-400 before:mr-3 before:rounded-full">Notifications, email alerts, and mentions</li>
-                  <li className="flex items-center before:content-[''] before:w-1.5 before:h-1.5 before:bg-sky-400 before:mr-3 before:rounded-full">Sharing, roles, and document activity logs</li>
-                  <li className="flex items-center before:content-[''] before:w-1.5 before:h-1.5 before:bg-sky-400 before:mr-3 before:rounded-full">GitHub repository linking and sync</li>
+          {/* Colophon column */}
+          <aside className="reveal lg:pl-2" style={{ animationDelay: "240ms" }}>
+            <div className="lg:sticky lg:top-10">
+              <div className="rounded-sm border border-rule-strong bg-paper-raised p-7">
+                <p className="eyebrow">The Colophon</p>
+                <h2 className="font-display mt-3 text-3xl font-semibold tracking-tight text-ink">
+                  Hafiz Muhammad Moaz
+                </h2>
+                <p className="mt-4 text-sm leading-relaxed text-ink-soft">
+                  I am the author of this codebase. Docsyra is my collaborative document
+                  workspace, built around clarity, speed, and a practical product workflow.
+                </p>
+
+                <div className="mt-6 space-y-px overflow-hidden rounded-sm border border-rule bg-rule">
+                  {contacts.map((item) => (
+                    <div key={item.label} className="flex items-center gap-3 bg-paper-card px-3.5 py-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-paper-sunk text-ink-soft">
+                        <item.icon className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="eyebrow text-[0.6rem]">{item.label}</p>
+                        {item.href ? (
+                          <a
+                            href={item.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block truncate text-sm font-medium text-ink transition hover:text-clay"
+                          >
+                            {item.value}
+                          </a>
+                        ) : (
+                          <p className="truncate text-sm font-medium text-ink">{item.value}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-5 rounded-sm bg-ink p-7 text-paper">
+                <p className="eyebrow text-clay-soft">What it includes</p>
+                <ul className="mt-5 space-y-3 text-sm text-paper-sunk">
+                  {[
+                    "Rich text editor with comments and presence",
+                    "Notifications, email alerts, and mentions",
+                    "Sharing, roles, and document activity logs",
+                    "GitHub repository linking and sync",
+                  ].map((line) => (
+                    <li key={line} className="flex gap-3">
+                      <span className="font-display mt-0.5 text-clay-soft">—</span>
+                      <span>{line}</span>
+                    </li>
+                  ))}
                 </ul>
               </div>
             </div>
           </aside>
-        </section>
+        </div>
+
+        <footer className="reveal mt-16 flex flex-wrap items-center justify-between gap-3 border-t-2 border-ink pt-5 text-sm text-ink-faint">
+          <p className="font-display italic">&ldquo;Set it down before it slips away.&rdquo;</p>
+          <p className="eyebrow">Docsyra — Printed on warm paper</p>
+        </footer>
       </main>
     </div>
   );

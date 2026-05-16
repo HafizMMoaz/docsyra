@@ -663,24 +663,29 @@ export default function SettingsPage() {
   }
 
   if (loading) {
-    return <p className="text-sm text-slate-500">Loading profile...</p>;
+    return (
+      <p className="font-display text-base italic text-ink-faint">Loading profile…</p>
+    );
   }
 
   return (
-    <section className="space-y-8">
+    <section className="mx-auto max-w-3xl space-y-7">
       {toast ? (
-        <div className="fixed right-4 top-4 z-50 w-[min(24rem,calc(100vw-2rem))] rounded-xl border border-black/10 bg-white px-4 py-3 shadow-[0_20px_50px_rgba(15,23,42,0.14)]">
+        <div className="fixed right-4 top-4 z-50 w-[min(24rem,calc(100vw-2rem))] rounded-sm border border-rule-strong bg-paper-card px-4 py-3 shadow-[0_24px_56px_-20px_rgba(33,28,22,0.5)]">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className={`text-sm font-medium ${toast.tone === "error" ? "text-rose-600" : "text-emerald-700"}`}>
+              <p
+                className="eyebrow"
+                style={{ color: toast.tone === "error" ? "var(--signal-danger)" : "var(--signal-ok)" }}
+              >
                 {toast.tone === "error" ? "Something went wrong" : "Saved"}
               </p>
-              <p className="mt-1 text-sm text-slate-600">{toast.message}</p>
+              <p className="mt-1 text-sm text-ink-soft">{toast.message}</p>
             </div>
             <button
               type="button"
               onClick={() => setToast(null)}
-              className="rounded-md px-2 py-1 text-xs font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+              className="rounded-sm px-2 py-1 text-xs font-medium text-ink-faint transition hover:bg-paper-sunk hover:text-ink"
               aria-label="Dismiss notification"
             >
               Close
@@ -689,34 +694,35 @@ export default function SettingsPage() {
         </div>
       ) : null}
 
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-        <p className="mt-1 text-sm text-slate-500">Manage your profile and account actions.</p>
+      <div className="reveal border-b-2 border-ink pb-6">
+        <p className="eyebrow">Account & preferences</p>
+        <h1 className="font-display mt-2 text-4xl font-semibold tracking-tight text-ink">Settings</h1>
+        <p className="mt-2 text-sm text-ink-faint">Manage your profile and account actions.</p>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6">
-        <div className="mb-5 flex items-center gap-3">
+      <div className="reveal rounded-sm border border-rule-strong bg-paper-card p-6" style={{ animationDelay: "60ms" }}>
+        <div className="mb-5 flex items-center gap-3 border-b border-rule pb-5">
           {user?.avatar_url ? (
             <img
               src={user.avatar_url}
               alt={user.name ? `${user.name} avatar` : "User avatar"}
-              className="h-12 w-12 rounded-full border border-slate-200 object-cover"
+              className="h-12 w-12 rounded-sm border border-rule object-cover"
               referrerPolicy="no-referrer"
             />
           ) : (
-            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-sm font-semibold text-slate-700">
+            <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-ink text-base font-semibold text-paper">
               {user?.name?.trim()?.charAt(0).toUpperCase() ?? "U"}
             </div>
           )}
           <div>
-            <p className="text-sm font-medium text-slate-900">{user?.name || "Unnamed user"}</p>
-            <p className="text-sm text-slate-500">{user?.email || "No email"}</p>
+            <p className="font-display text-lg font-semibold text-ink">{user?.name || "Unnamed user"}</p>
+            <p className="text-sm text-ink-faint">{user?.email || "No email"}</p>
           </div>
         </div>
 
         <form className="space-y-4" onSubmit={handleProfileUpdate}>
           <div>
-            <label htmlFor="name" className="mb-1 block text-sm font-medium text-slate-700">
+            <label htmlFor="name" className="eyebrow mb-1.5 block">
               Name
             </label>
             <input
@@ -724,13 +730,13 @@ export default function SettingsPage() {
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+              className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
               disabled={saving}
             />
           </div>
 
           <div>
-            <label htmlFor="profession" className="mb-1 block text-sm font-medium text-slate-700">
+            <label htmlFor="profession" className="eyebrow mb-1.5 block">
               Profession
             </label>
             <input
@@ -740,7 +746,7 @@ export default function SettingsPage() {
               onChange={(event) => setProfession(event.target.value)}
               list="profession-options"
               placeholder="Search or select profession"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+              className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
               disabled={saving}
             />
             <datalist id="profession-options">
@@ -754,14 +760,14 @@ export default function SettingsPage() {
                 value={professionOther}
                 onChange={(event) => setProfessionOther(event.target.value)}
                 placeholder="Type your profession"
-                className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                className="mt-2 w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
                 disabled={saving}
               />
             ) : null}
           </div>
 
           <div>
-            <label htmlFor="industry" className="mb-1 block text-sm font-medium text-slate-700">
+            <label htmlFor="industry" className="eyebrow mb-1.5 block">
               Industry
             </label>
             <input
@@ -771,7 +777,7 @@ export default function SettingsPage() {
               onChange={(event) => setIndustry(event.target.value)}
               list="industry-options"
               placeholder="Search or select industry"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+              className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
               disabled={saving}
             />
             <datalist id="industry-options">
@@ -785,14 +791,14 @@ export default function SettingsPage() {
                 value={industryOther}
                 onChange={(event) => setIndustryOther(event.target.value)}
                 placeholder="Type your industry"
-                className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                className="mt-2 w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
                 disabled={saving}
               />
             ) : null}
           </div>
 
           <div>
-            <label htmlFor="country" className="mb-1 block text-sm font-medium text-slate-700">
+            <label htmlFor="country" className="eyebrow mb-1.5 block">
               Country
             </label>
             <input
@@ -802,7 +808,7 @@ export default function SettingsPage() {
               onChange={(event) => setCountry(event.target.value)}
               list="country-options"
               placeholder="Search and select country"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+              className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
               disabled={saving}
             />
             <datalist id="country-options">
@@ -815,22 +821,22 @@ export default function SettingsPage() {
           <button
             type="submit"
             disabled={saving}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
+            className="rounded-sm bg-ink px-5 py-2.5 text-sm font-medium text-paper transition hover:bg-clay disabled:opacity-60"
           >
             {saving ? "Saving..." : "Save changes"}
           </button>
         </form>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-slate-900">Password</h2>
-        <p className="mt-1 text-sm text-slate-500">
+      <div className="reveal rounded-sm border border-rule-strong bg-paper-card p-6">
+        <h2 className="font-display text-xl font-semibold text-ink">Password</h2>
+        <p className="mt-1 text-sm text-ink-faint">
           Set or update your password for email login. Works for both social and email accounts.
         </p>
 
         <form className="mt-4 space-y-4" onSubmit={handlePasswordUpdate}>
           <div>
-            <label htmlFor="new-password" className="mb-1 block text-sm font-medium text-slate-700">
+            <label htmlFor="new-password" className="eyebrow mb-1.5 block">
               New Password
             </label>
             <input
@@ -839,13 +845,13 @@ export default function SettingsPage() {
               value={newPassword}
               onChange={(event) => setNewPassword(event.target.value)}
               placeholder="Minimum 8 characters"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+              className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
               disabled={updatingPassword}
             />
           </div>
 
           <div>
-            <label htmlFor="confirm-password" className="mb-1 block text-sm font-medium text-slate-700">
+            <label htmlFor="confirm-password" className="eyebrow mb-1.5 block">
               Confirm Password
             </label>
             <input
@@ -854,7 +860,7 @@ export default function SettingsPage() {
               value={confirmPassword}
               onChange={(event) => setConfirmPassword(event.target.value)}
               placeholder="Retype your password"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+              className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
               disabled={updatingPassword}
             />
           </div>
@@ -862,28 +868,28 @@ export default function SettingsPage() {
           <button
             type="submit"
             disabled={updatingPassword}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
+            className="rounded-sm bg-ink px-5 py-2.5 text-sm font-medium text-paper transition hover:bg-clay disabled:opacity-60"
           >
             {updatingPassword ? "Updating..." : "Update password"}
           </button>
         </form>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-slate-900">Email Verification</h2>
-        <p className="mt-1 text-sm text-slate-500">
+      <div className="reveal rounded-sm border border-rule-strong bg-paper-card p-6">
+        <h2 className="font-display text-xl font-semibold text-ink">Email Verification</h2>
+        <p className="mt-1 text-sm text-ink-faint">
           Verify your email to unlock collaboration and public sharing actions.
         </p>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-          <p className={`text-sm font-medium ${emailVerified ? "text-emerald-700" : "text-amber-700"}`}>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-sm border border-rule bg-paper-raised px-4 py-3">
+          <p className="text-sm font-medium" style={{ color: emailVerified ? "var(--signal-ok)" : "var(--signal-warn)" }}>
             {emailVerified ? "Email verified" : "Email not verified"}
           </p>
           <button
             type="button"
             onClick={handleSendVerificationEmail}
             disabled={sendingVerificationEmail || emailVerified}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
+            className="rounded-sm border border-rule-strong bg-paper-card px-3.5 py-2.5 text-sm font-medium text-ink-soft transition hover:border-ink hover:text-ink disabled:opacity-60"
           >
             {emailVerified
               ? "Verified"
@@ -894,9 +900,9 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-slate-900">Two-Factor Authentication</h2>
-        <p className="mt-1 text-sm text-slate-500">Protect your account with an authenticator app and backup codes.</p>
+      <div className="reveal rounded-sm border border-rule-strong bg-paper-card p-6">
+        <h2 className="font-display text-xl font-semibold text-ink">Two-Factor Authentication</h2>
+        <p className="mt-1 text-sm text-ink-faint">Protect your account with an authenticator app and backup codes.</p>
 
         <div className="mt-4 space-y-4">
           {!twoFactorEnabled && !twoFactorSecret ? (
@@ -904,20 +910,20 @@ export default function SettingsPage() {
               type="button"
               onClick={handleStartTwoFactorSetup}
               disabled={settingUpTwoFactor}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
+              className="rounded-sm bg-ink px-5 py-2.5 text-sm font-medium text-paper transition hover:bg-clay disabled:opacity-60"
             >
               {settingUpTwoFactor ? "Preparing..." : "Enable 2FA"}
             </button>
           ) : null}
 
           {twoFactorSecret && twoFactorQrCodeUrl ? (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm text-slate-700">Scan this QR code with your authenticator app, then confirm with a 6-digit code.</p>
-              <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+            <div className="rounded-sm border border-rule bg-paper-raised p-4">
+              <p className="text-sm text-ink-soft">Scan this QR code with your authenticator app, then confirm with a 6-digit code.</p>
+              <p className="mt-2 rounded-sm border-l-2 border-signal-warn bg-clay-wash/50 px-3 py-2 text-xs font-medium text-signal-warn">
                 Save your backup codes after enabling 2FA. You will not be able to see them again.
               </p>
-              <img src={twoFactorQrCodeUrl} alt="2FA QR code" className="mt-3 h-44 w-44 rounded border border-slate-200 bg-white p-2" />
-              <p className="mt-2 break-all text-xs text-slate-500">Secret: {twoFactorSecret}</p>
+              <img src={twoFactorQrCodeUrl} alt="2FA QR code" className="mt-3 h-44 w-44 rounded-sm border border-rule bg-paper-card p-2" />
+              <p className="mt-2 break-all font-mono text-xs text-ink-faint">Secret: {twoFactorSecret}</p>
 
               <form className="mt-3 space-y-2" onSubmit={handleVerifyTwoFactorSetup}>
                 <input
@@ -925,13 +931,13 @@ export default function SettingsPage() {
                   value={twoFactorCode}
                   onChange={(event) => setTwoFactorCode(event.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
                   placeholder="Enter 6-digit code"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                  className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
                   disabled={verifyingTwoFactor}
                 />
                 <button
                   type="submit"
                   disabled={verifyingTwoFactor}
-                  className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
+                  className="rounded-sm bg-ink px-5 py-2.5 text-sm font-medium text-paper transition hover:bg-clay disabled:opacity-60"
                 >
                   {verifyingTwoFactor ? "Verifying..." : "Confirm & Enable"}
                 </button>
@@ -940,9 +946,9 @@ export default function SettingsPage() {
           ) : null}
 
           {twoFactorEnabled ? (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-              <p className="text-sm font-medium text-emerald-800">2FA is enabled</p>
-              <p className="mt-1 text-sm text-emerald-700">Enter a current authenticator code to disable 2FA.</p>
+            <div className="rounded-sm border border-pine/30 bg-pine-wash/60 p-4">
+              <p className="text-sm font-semibold text-pine">2FA is enabled</p>
+              <p className="mt-1 text-sm text-ink-soft">Enter a current authenticator code to disable 2FA.</p>
 
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <input
@@ -950,14 +956,14 @@ export default function SettingsPage() {
                   value={twoFactorCode}
                   onChange={(event) => setTwoFactorCode(event.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
                   placeholder="6-digit code"
-                  className="w-52 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                  className="w-52 rounded-sm border border-rule-strong bg-paper-raised px-3.5 py-2.5 text-sm text-ink outline-none transition focus:border-clay"
                   disabled={disablingTwoFactor}
                 />
                 <button
                   type="button"
                   onClick={handleDisableTwoFactor}
                   disabled={disablingTwoFactor}
-                  className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-100 disabled:opacity-60"
+                  className="rounded-sm border border-clay/40 bg-clay-wash px-4 py-2.5 text-sm font-medium text-clay transition hover:bg-clay hover:text-paper disabled:opacity-60"
                 >
                   {disablingTwoFactor ? "Disabling..." : "Disable 2FA"}
                 </button>
@@ -966,12 +972,12 @@ export default function SettingsPage() {
           ) : null}
 
           {backupCodes.length > 0 ? (
-            <div className="rounded-lg border border-slate-200 bg-white p-4">
-              <p className="text-sm font-medium text-slate-900">Backup codes (shown once)</p>
-              <p className="mt-1 text-xs text-slate-500">Store these in a safe place. You will not be able to view them again. Each code can be used once.</p>
+            <div className="rounded-sm border border-rule bg-paper-raised p-4">
+              <p className="font-display text-base font-semibold text-ink">Backup codes (shown once)</p>
+              <p className="mt-1 text-xs text-ink-faint">Store these in a safe place. You will not be able to view them again. Each code can be used once.</p>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 {backupCodes.map((code) => (
-                  <code key={code} className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-800">{code}</code>
+                  <code key={code} className="rounded-sm bg-paper-sunk px-2 py-1.5 font-mono text-xs text-ink">{code}</code>
                 ))}
               </div>
             </div>
@@ -979,33 +985,33 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-slate-900">Connected Accounts</h2>
-        <p className="mt-1 text-sm text-slate-500">Connect your social providers</p>
+      <div className="reveal rounded-sm border border-rule-strong bg-paper-card p-6">
+        <h2 className="font-display text-xl font-semibold text-ink">Connected Accounts</h2>
+        <p className="mt-1 text-sm text-ink-faint">Connect your social providers</p>
 
         <div className="mt-4 space-y-3">
           {socialAccounts.map((account) => (
             <div
               key={account.provider}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-rule bg-paper-raised px-4 py-3"
             >
               <div className="flex items-center gap-3">
                 {account.connected && account.avatar_url ? (
                   <img
                     src={account.avatar_url}
                     alt={`${getProviderLabel(account.provider)} account avatar`}
-                    className="h-10 w-10 rounded-full border border-slate-200 object-cover"
+                    className="h-10 w-10 rounded-sm border border-rule object-cover"
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-xs font-semibold text-slate-600">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-ink text-xs font-semibold text-paper">
                     {getProviderInitial(account.provider)}
                   </div>
                 )}
 
                 <div>
-                  <p className="text-sm font-medium text-slate-900">{getProviderLabel(account.provider)}</p>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm font-semibold text-ink">{getProviderLabel(account.provider)}</p>
+                  <p className="text-sm text-ink-faint">
                     {account.connected
                       ? account.email || "Connected"
                       : "Not connected"}
@@ -1018,7 +1024,7 @@ export default function SettingsPage() {
                   type="button"
                   onClick={() => handleDisconnect(account.provider)}
                   disabled={accountActionLoading[account.provider]}
-                  className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-100 disabled:opacity-60"
+                  className="rounded-sm border border-clay/40 bg-clay-wash px-3.5 py-2 text-sm font-medium text-clay transition hover:bg-clay hover:text-paper disabled:opacity-60"
                 >
                   {accountActionLoading[account.provider] ? "Disconnecting..." : "Disconnect"}
                 </button>
@@ -1027,7 +1033,7 @@ export default function SettingsPage() {
                   type="button"
                   onClick={() => handleConnect(account.provider)}
                   disabled={accountActionLoading[account.provider]}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                  className="rounded-sm border border-rule-strong bg-paper-card px-3.5 py-2.5 text-sm font-medium text-ink-soft transition hover:border-ink hover:text-ink"
                 >
                   {accountActionLoading[account.provider] ? "Connecting..." : "Connect"}
                 </button>
@@ -1037,32 +1043,32 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-slate-900">Passkeys</h2>
-        <p className="mt-1 text-sm text-slate-500">Use passkeys for secure passwordless login.</p>
+      <div className="reveal rounded-sm border border-rule-strong bg-paper-card p-6">
+        <h2 className="font-display text-xl font-semibold text-ink">Passkeys</h2>
+        <p className="mt-1 text-sm text-ink-faint">Use passkeys for secure passwordless login.</p>
 
         <div className="mt-4 space-y-3">
           <button
             type="button"
             onClick={handleAddPasskey}
             disabled={creatingPasskey}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
+            className="rounded-sm bg-ink px-5 py-2.5 text-sm font-medium text-paper transition hover:bg-clay disabled:opacity-60"
           >
             {creatingPasskey ? "Adding..." : "Add Passkey"}
           </button>
 
           {passkeys.length === 0 ? (
-            <p className="text-sm text-slate-500">No passkeys registered yet.</p>
+            <p className="text-sm text-ink-faint">No passkeys registered yet.</p>
           ) : (
             <div className="space-y-2">
               {passkeys.map((entry) => (
                 <div
                   key={entry.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+                  className="flex items-center justify-between gap-3 rounded-sm border border-rule bg-paper-raised px-3.5 py-2.5"
                 >
                   <div>
-                    <p className="text-sm font-medium text-slate-800">Passkey ending in {entry.credentialIdSuffix}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-sm font-medium text-ink">Passkey ending in <span className="font-mono">{entry.credentialIdSuffix}</span></p>
+                    <p className="text-xs text-ink-faint">
                       Added {new Date(entry.createdAt).toLocaleString()}
                     </p>
                   </div>
@@ -1070,7 +1076,7 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => handleRemovePasskey(entry.id)}
                     disabled={removingPasskeyId === entry.id}
-                    className="rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition hover:bg-amber-100 disabled:opacity-60"
+                    className="rounded-sm border border-clay/40 bg-clay-wash px-3 py-1.5 text-xs font-medium text-clay transition hover:bg-clay hover:text-paper disabled:opacity-60"
                   >
                     {removingPasskeyId === entry.id ? "Removing..." : "Remove"}
                   </button>
@@ -1081,16 +1087,16 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-red-200 bg-red-50 p-6">
-        <h2 className="text-lg font-semibold text-red-900">Danger Zone</h2>
-        <p className="mt-1 text-sm text-red-700">Deactivate or permanently delete your account.</p>
+      <div className="reveal rounded-sm border border-signal-danger/30 bg-clay-wash/40 p-6">
+        <h2 className="font-display text-xl font-semibold text-signal-danger">Danger Zone</h2>
+        <p className="mt-1 text-sm text-ink-soft">Deactivate or permanently delete your account.</p>
 
         <div className="mt-4 flex flex-wrap gap-3">
           <button
             type="button"
             onClick={handleDeactivate}
             disabled={deactivating || deleting}
-            className="rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 transition hover:bg-red-100 disabled:opacity-60"
+            className="rounded-sm border border-signal-danger/40 bg-paper-card px-5 py-2.5 text-sm font-medium text-signal-danger transition hover:bg-signal-danger hover:text-paper disabled:opacity-60"
           >
             {deactivating ? "Deactivating..." : "Deactivate Account"}
           </button>
@@ -1099,7 +1105,7 @@ export default function SettingsPage() {
             type="button"
             onClick={handleDelete}
             disabled={deleting || deactivating}
-            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-60"
+            className="rounded-sm bg-signal-danger px-5 py-2.5 text-sm font-medium text-paper transition hover:opacity-90 disabled:opacity-60"
           >
             {deleting ? "Deleting..." : "Delete Account"}
           </button>

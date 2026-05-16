@@ -258,43 +258,70 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   if (loadingSession) {
     return (
-      <div className="min-h-screen bg-[#f7f6f3] px-4 py-6 text-sm text-slate-500 md:px-6">
-        Checking session...
+      <div className="flex min-h-screen items-center justify-center px-4 text-sm text-ink-faint">
+        <span className="font-display italic">Opening your workspace…</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f6f3] text-slate-900">
+    <div className="min-h-screen text-ink">
       <div className="flex min-h-screen">
-        <aside className="hidden w-60 shrink-0 border-r border-black/5 bg-white/80 p-5 backdrop-blur md:block">
-          <div className="text-lg font-semibold tracking-tight text-slate-900">Docsyra</div>
+        <aside className="hidden w-64 shrink-0 border-r border-rule bg-paper-raised md:flex md:flex-col">
+          <div className="border-b border-rule px-6 py-6">
+            <div className="flex items-baseline gap-2">
+              <span className="font-display text-2xl font-semibold tracking-tight text-ink">Docsyra</span>
+            </div>
+            <p className="eyebrow mt-1">Document Workspace</p>
+          </div>
 
-          <nav className="mt-8 space-y-1 text-sm">
-            {navItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={
-                  isActive(item.href)
-                    ? "block rounded-md bg-slate-100 px-3 py-2 font-medium text-slate-900"
-                    : "block rounded-md px-3 py-2 font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                }
-              >
-                {item.label}
-              </Link>
-            ))}
+          <nav className="flex-1 px-3 py-5">
+            <p className="eyebrow px-3 pb-2">Navigation</p>
+            <div className="space-y-1">
+              {navItems.map((item, index) => {
+                const active = isActive(item.href);
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={
+                      active
+                        ? "flex items-center gap-3 rounded-sm bg-ink px-3 py-2.5 text-sm font-medium text-paper"
+                        : "flex items-center gap-3 rounded-sm px-3 py-2.5 text-sm font-medium text-ink-soft transition hover:bg-paper-sunk hover:text-ink"
+                    }
+                  >
+                    <span
+                      className={`font-display text-xs ${active ? "text-clay-soft" : "text-ink-ghost"}`}
+                    >
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
           </nav>
+
+          <div className="border-t border-rule px-6 py-5">
+            <p className="font-display text-sm italic text-ink-faint">
+              &ldquo;A place for every page.&rdquo;
+            </p>
+          </div>
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-black/5 bg-white/85 px-4 py-3 backdrop-blur md:px-6">
-            <input
-              type="text"
-              placeholder="Search documents"
-              className="w-full max-w-md rounded-xl border border-black/10 bg-white px-3 py-2 text-sm outline-none placeholder:text-slate-400 focus:border-black/20"
-            />
-            <div className="flex items-center gap-3">
+          <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-rule bg-paper-raised/95 px-4 py-3 backdrop-blur md:px-7">
+            <div className="flex items-center gap-3 md:flex-1">
+              <span className="font-display text-lg font-semibold tracking-tight text-ink md:hidden">
+                Docsyra
+              </span>
+              <input
+                type="text"
+                placeholder="Search documents…"
+                className="hidden w-full max-w-sm rounded-sm border border-rule-strong bg-paper-card px-3.5 py-2 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay md:block"
+              />
+            </div>
+            <div className="flex items-center gap-2.5">
               <div className="relative" ref={notificationsRef}>
                 <button
                   type="button"
@@ -306,11 +333,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       void loadNotifications(12);
                     }
                   }}
-                  className={`relative rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 ${newNotificationsPulse ? "notifications-bell-pulse" : ""}`}
+                  className={`relative rounded-sm border border-rule-strong bg-paper-card px-3.5 py-2 text-sm font-medium text-ink-soft transition hover:border-ink hover:text-ink ${newNotificationsPulse ? "notifications-bell-pulse" : ""}`}
                 >
                   Notifications
                   {unreadNotificationCount > 0 ? (
-                    <span className="ml-2 rounded-full bg-rose-600 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+                    <span className="ml-2 rounded-full bg-clay px-1.5 py-0.5 text-[11px] font-semibold text-paper">
                       {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
                     </span>
                   ) : null}
@@ -318,36 +345,36 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
                 {notificationsOpen ? (
                   <div
-                    className="absolute right-0 z-50 mt-2 w-96 rounded-2xl border border-black/10 bg-white p-3 shadow-[0_24px_60px_rgba(15,23,42,0.12)]"
+                    className="absolute right-0 z-50 mt-2 w-96 rounded-sm border border-rule-strong bg-paper-card p-3 shadow-[0_28px_64px_-24px_rgba(33,28,22,0.45)]"
                     onClick={(event) => event.stopPropagation()}
                   >
-                    <div className="mb-2 flex items-center justify-between gap-2 border-b border-black/5 pb-2">
-                      <h3 className="text-sm font-semibold text-slate-900">Notifications</h3>
+                    <div className="mb-2 flex items-center justify-between gap-2 border-b border-rule pb-2">
+                      <h3 className="font-display text-base font-semibold text-ink">Notifications</h3>
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => {
                             void markAllNotificationsAsRead();
                           }}
-                          className="rounded-md border border-black/10 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50"
+                          className="rounded-sm border border-rule-strong px-2 py-1 text-xs text-ink-soft transition hover:bg-paper-sunk"
                         >
                           Mark all read
                         </button>
                         <button
                           type="button"
                           onClick={() => setNotificationsOpen(false)}
-                          className="rounded-md border border-black/10 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50"
+                          className="rounded-sm border border-rule-strong px-2 py-1 text-xs text-ink-soft transition hover:bg-paper-sunk"
                         >
                           Close
                         </button>
                       </div>
                     </div>
 
-                    {notificationsLoading ? <p className="text-sm text-slate-500">Loading notifications...</p> : null}
-                    {notificationsError ? <p className="text-sm text-red-600">{notificationsError}</p> : null}
+                    {notificationsLoading ? <p className="text-sm text-ink-faint">Loading notifications…</p> : null}
+                    {notificationsError ? <p className="text-sm text-signal-danger">{notificationsError}</p> : null}
 
                     {!notificationsLoading && notifications.length === 0 ? (
-                      <p className="text-sm text-slate-500">No notifications yet.</p>
+                      <p className="py-4 text-center font-display text-sm italic text-ink-faint">No notifications yet.</p>
                     ) : null}
 
                     <div className="max-h-80 space-y-2 overflow-auto pr-1">
@@ -360,13 +387,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                             setNotificationsOpen(false);
                             router.push(`/editor/${notification.document_id}`);
                           }}
-                          className={`w-full rounded-xl border px-2 py-2 text-left transition hover:bg-slate-50 ${notification.read_at ? "border-black/10 bg-white" : "border-sky-200 bg-sky-50"}`}
+                          className={`w-full rounded-sm border px-2.5 py-2 text-left transition hover:border-ink ${notification.read_at ? "border-rule bg-paper-card" : "border-clay/40 bg-clay-wash/50"}`}
                         >
                           <div className="mb-1 flex items-center justify-between gap-2">
-                            <p className="text-xs font-semibold text-slate-700">{notification.type === "mention" ? "Mention" : "Comment"}</p>
-                            <p className="text-[11px] text-slate-500">{formatNotificationTime(notification.created_at)}</p>
+                            <p className="eyebrow text-[0.6rem] text-clay">{notification.type === "mention" ? "Mention" : "Comment"}</p>
+                            <p className="text-[11px] text-ink-faint">{formatNotificationTime(notification.created_at)}</p>
                           </div>
-                          <p className="text-sm text-slate-800">{notification.message}</p>
+                          <p className="text-sm text-ink-soft">{notification.message}</p>
                         </button>
                       ))}
                     </div>
@@ -374,33 +401,33 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 ) : null}
               </div>
 
-              <div className="flex items-center gap-2 rounded-full border border-black/5 bg-white px-2 py-1.5 shadow-sm">
+              <div className="flex items-center gap-2 rounded-sm border border-rule-strong bg-paper-card px-2 py-1.5">
                 {user?.avatar_url ? (
                   <img
                     src={user.avatar_url}
                     alt={user.name ? `${user.name} avatar` : "User avatar"}
-                    className="h-8 w-8 rounded-full border border-black/10 object-cover"
+                    className="h-7 w-7 rounded-sm object-cover"
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full border border-black/10 bg-slate-100 text-xs font-semibold text-slate-700">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-sm bg-ink text-xs font-semibold text-paper">
                     {user?.name?.trim()?.charAt(0).toUpperCase() ?? "U"}
                   </div>
                 )}
-                <p className="hidden text-sm font-medium text-slate-700 sm:block">{user?.name || user?.email || "User"}</p>
+                <p className="hidden text-sm font-medium text-ink sm:block">{user?.name || user?.email || "User"}</p>
               </div>
               <button
                 type="button"
                 onClick={handleLogout}
                 disabled={loggingOut}
-                className="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                className="rounded-sm border border-rule-strong bg-paper-card px-4 py-2 text-sm font-medium text-ink-soft transition hover:border-ink hover:text-ink disabled:opacity-60"
               >
-                {loggingOut ? "Logging out..." : "Logout"}
+                {loggingOut ? "Logging out…" : "Logout"}
               </button>
             </div>
           </header>
 
-          <main className="flex-1 px-4 py-6 md:px-6">{children}</main>
+          <main className="flex-1 px-4 py-8 md:px-10 md:py-10">{children}</main>
         </div>
       </div>
     </div>
