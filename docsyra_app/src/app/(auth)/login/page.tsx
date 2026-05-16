@@ -422,21 +422,18 @@ function LoginPageContent() {
   }
 
   return (
-    <main className="grid min-h-screen bg-paper lg:grid-cols-[1fr_1.05fr]">
-      {/* Auth form */}
-      <div className="order-2 flex items-center justify-center border-rule px-5 py-12 sm:px-10 lg:order-1 lg:border-r">
-        <section className="w-full max-w-sm">
-          <div className="mb-10 flex items-center gap-3 lg:hidden">
-            <span className="font-display text-xl font-bold tracking-tight text-ink">Docsyra</span>
-          </div>
+    <main className="flex min-h-screen items-center justify-center bg-paper px-5 py-12">
+      <section className="w-full max-w-sm">
+        <div className="mb-9 flex items-center justify-center gap-2">
+          <span className="font-display text-lg font-bold tracking-tight text-ink">Docsyra</span>
+        </div>
 
-          <p className="eyebrow text-clay">Account access</p>
-          <h1 className="font-display mt-3 text-3xl font-bold tracking-tight text-ink">
-            Sign in to continue
-          </h1>
-          <p className="mt-2 text-sm text-ink-faint">
-            Use a social provider, a passkey, or your email below.
-          </p>
+        <h1 className="font-display text-center text-[1.7rem] font-bold tracking-tight text-ink">
+          Sign in to continue
+        </h1>
+        <p className="mt-2 text-center text-sm text-ink-faint">
+          Continue with a provider, a passkey, or your email.
+        </p>
 
           <div className="mt-8 grid gap-px overflow-hidden rounded-sm border border-rule-strong">
             <button
@@ -663,50 +660,10 @@ function LoginPageContent() {
           </button>
           </form>
 
-          <p className="mt-6 text-xs text-ink-ghost">
-            By continuing you agree to keep your documents tidy.
+          <p className="mt-7 text-center text-xs text-ink-ghost">
+            A calm surface for writing together.
           </p>
-        </section>
-      </div>
-
-      {/* Brand panel */}
-      <aside className="order-1 hidden flex-col justify-between bg-ink px-12 py-12 text-paper lg:order-2 lg:flex xl:px-16">
-        <div className="flex items-center gap-3">
-          <span className="font-display text-xl font-bold tracking-tight text-paper">Docsyra</span>
-          <span className="h-3 w-px bg-paper/25" />
-          <span className="eyebrow text-paper/55">The Document Workspace</span>
-        </div>
-
-        <div>
-          <p className="eyebrow text-clay">Welcome back</p>
-          <h2 className="font-display mt-5 text-4xl font-bold leading-[1.08] tracking-tight text-paper xl:text-5xl">
-            Pick up exactly where the ink dried.
-          </h2>
-          <p className="mt-5 max-w-md text-sm leading-relaxed text-paper/65">
-            Your documents, comments, and collaborators are waiting — a calm surface
-            for writing together.
-          </p>
-        </div>
-
-        <div className="border-t border-paper/15">
-          {[
-            ["01", "Live presence", "See cursors and edits as they happen"],
-            ["02", "Threaded comments", "Discuss right on the passage"],
-            ["03", "GitHub sync", "Keep prose and repo in step"],
-          ].map(([index, title, text]) => (
-            <div
-              key={title}
-              className="flex items-baseline gap-4 border-b border-paper/15 py-4"
-            >
-              <span className="eyebrow text-clay">{index}</span>
-              <div>
-                <p className="text-sm font-semibold text-paper">{title}</p>
-                <p className="mt-0.5 text-xs text-paper/55">{text}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </aside>
+      </section>
     </main>
   );
 }
