@@ -280,6 +280,10 @@ export default function EditorPage() {
   const [githubSaving, setGitHubSaving] = useState(false);
   const [githubError, setGitHubError] = useState<string | null>(null);
   const [githubSuccess, setGitHubSuccess] = useState<string | null>(null);
+  const [githubMode, setGitHubMode] = useState<"existing" | "create">("existing");
+  const [githubNewRepoName, setGitHubNewRepoName] = useState("");
+  const [githubNewRepoPrivate, setGitHubNewRepoPrivate] = useState(true);
+  const [githubCreatingRepo, setGitHubCreatingRepo] = useState(false);
   const [githubSyncStatus, setGitHubSyncStatus] = useState<GitHubSyncStatus>("unknown");
   const [githubSyncStatusLoading, setGitHubSyncStatusLoading] = useState(false);
   const [githubLastSyncedAt, setGitHubLastSyncedAt] = useState<number | null>(null);
@@ -1676,6 +1680,7 @@ export default function EditorPage() {
 
   async function openGitHubModal() {
     setGitHubModalOpen(true);
+    setGitHubMode("existing");
     setGitHubError(null);
     setGitHubSuccess(null);
     setGitHubPreviewReady(false);
@@ -1744,6 +1749,76 @@ export default function EditorPage() {
       setGitHubError("Failed to connect GitHub repository");
     } finally {
       setGitHubSaving(false);
+    }
+  }
+
+  async function handleCreateGitHubRepo() {
+    const name = githubNewRepoName.trim();
+    const path = githubSelectedPath.trim();
+
+    if (!name) {
+      setGitHubError("Repository name is required");
+      return;
+    }
+
+    if (!/^[A-Za-z0-9._-]+$/.test(name)) {
+      setGitHubError("Use letters, numbers, dots, hyphens, or underscores only");
+      return;
+    }
+
+    if (!path) {
+      setGitHubError("Path is required");
+      return;
+    }
+
+    setGitHubCreatingRepo(true);
+    setGitHubError(null);
+    setGitHubSuccess(null);
+
+    try {
+      const response = await fetch(`/api/docs/${id}/create-github-repo`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...csrfHeaders(),
+        },
+        body: JSON.stringify({
+          name,
+          private: githubNewRepoPrivate,
+          path,
+        }),
+      });
+
+      const data = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+        mapping?: {
+          github_repo?: string | null;
+          github_branch?: string | null;
+          github_path?: string | null;
+        };
+      };
+
+      if (!response.ok || !data.success) {
+        setGitHubError(data.error ?? "Failed to create GitHub repository");
+        return;
+      }
+
+      setGitHubAccountConnected(true);
+      setGitHubRepo(data.mapping?.github_repo ?? null);
+      setGitHubBranch(data.mapping?.github_branch ?? "main");
+      setGitHubPath(data.mapping?.github_path ?? path);
+      setGitHubSuccess("Repository created and linked. The next save will push this document.");
+      setGitHubSyncStatus("unknown");
+      setGitHubPreviewReady(false);
+      setGitHubPreviewDiff([]);
+      setGitHubNewRepoName("");
+      setGitHubMode("existing");
+      await loadGitHubRepos();
+    } catch {
+      setGitHubError("Failed to create GitHub repository");
+    } finally {
+      setGitHubCreatingRepo(false);
     }
   }
 
@@ -2606,54 +2681,142 @@ export default function EditorPage() {
             </div>
 
             <div className="mt-4 space-y-3">
-              <label className="block">
-                <span className="eyebrow mb-1.5 block">Repository</span>
-                <select
-                  value={githubSelectedRepo}
-                  onChange={(event) => {
-                    const nextRepo = event.target.value;
-                    setGitHubSelectedRepo(nextRepo);
-
-                    const matched = githubRepoOptions.find((repo) => repo.full_name === nextRepo);
-                    if (matched && (!githubSelectedBranch || githubSelectedBranch === "main")) {
-                      setGitHubSelectedBranch(matched.default_branch || "main");
-                    }
+              <div className="flex gap-1 rounded-sm border border-rule-strong bg-paper-raised p-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGitHubMode("existing");
+                    setGitHubError(null);
+                    setGitHubSuccess(null);
                   }}
-                  disabled={githubLoadingRepos}
-                  className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3 py-2.5 text-sm text-ink outline-none transition focus:border-clay disabled:opacity-60"
+                  className={`flex-1 rounded-sm px-3 py-2 text-sm font-medium transition ${
+                    githubMode === "existing" ? "bg-ink text-paper" : "text-ink-soft hover:text-ink"
+                  }`}
                 >
-                  <option value="">Select repository</option>
-                  {githubRepoOptions.map((repo) => (
-                    <option key={repo.id} value={repo.full_name}>
-                      {repo.full_name}{repo.private ? " (private)" : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <div className="grid gap-3 md:grid-cols-2">
-                <label className="block">
-                  <span className="eyebrow mb-1.5 block">Branch</span>
-                  <input
-                    type="text"
-                    value={githubSelectedBranch}
-                    onChange={(event) => setGitHubSelectedBranch(event.target.value)}
-                    placeholder="main"
-                    className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="eyebrow mb-1.5 block">Path</span>
-                  <input
-                    type="text"
-                    value={githubSelectedPath}
-                    onChange={(event) => setGitHubSelectedPath(event.target.value)}
-                    placeholder="docs/file.md"
-                    className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
-                  />
-                </label>
+                  Select existing
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGitHubMode("create");
+                    setGitHubError(null);
+                    setGitHubSuccess(null);
+                  }}
+                  className={`flex-1 rounded-sm px-3 py-2 text-sm font-medium transition ${
+                    githubMode === "create" ? "bg-ink text-paper" : "text-ink-soft hover:text-ink"
+                  }`}
+                >
+                  Create new
+                </button>
               </div>
+
+              {githubMode === "existing" ? (
+                <>
+                  <label className="block">
+                    <span className="eyebrow mb-1.5 block">Repository</span>
+                    <select
+                      value={githubSelectedRepo}
+                      onChange={(event) => {
+                        const nextRepo = event.target.value;
+                        setGitHubSelectedRepo(nextRepo);
+
+                        const matched = githubRepoOptions.find((repo) => repo.full_name === nextRepo);
+                        if (matched && (!githubSelectedBranch || githubSelectedBranch === "main")) {
+                          setGitHubSelectedBranch(matched.default_branch || "main");
+                        }
+                      }}
+                      disabled={githubLoadingRepos}
+                      className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3 py-2.5 text-sm text-ink outline-none transition focus:border-clay disabled:opacity-60"
+                    >
+                      <option value="">Select repository</option>
+                      {githubRepoOptions.map((repo) => (
+                        <option key={repo.id} value={repo.full_name}>
+                          {repo.full_name}{repo.private ? " (private)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <label className="block">
+                      <span className="eyebrow mb-1.5 block">Branch</span>
+                      <input
+                        type="text"
+                        value={githubSelectedBranch}
+                        onChange={(event) => setGitHubSelectedBranch(event.target.value)}
+                        placeholder="main"
+                        className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="eyebrow mb-1.5 block">Path</span>
+                      <input
+                        type="text"
+                        value={githubSelectedPath}
+                        onChange={(event) => setGitHubSelectedPath(event.target.value)}
+                        placeholder="docs/file.md"
+                        className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                      />
+                    </label>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <label className="block">
+                    <span className="eyebrow mb-1.5 block">New repository name</span>
+                    <input
+                      type="text"
+                      value={githubNewRepoName}
+                      onChange={(event) => setGitHubNewRepoName(event.target.value)}
+                      placeholder="my-document-repo"
+                      className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                    />
+                  </label>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="block">
+                      <span className="eyebrow mb-1.5 block">Visibility</span>
+                      <div className="flex gap-1 rounded-sm border border-rule-strong bg-paper-raised p-1">
+                        <button
+                          type="button"
+                          onClick={() => setGitHubNewRepoPrivate(true)}
+                          className={`flex-1 rounded-sm px-3 py-1.5 text-sm font-medium transition ${
+                            githubNewRepoPrivate ? "bg-ink text-paper" : "text-ink-soft hover:text-ink"
+                          }`}
+                        >
+                          Private
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setGitHubNewRepoPrivate(false)}
+                          className={`flex-1 rounded-sm px-3 py-1.5 text-sm font-medium transition ${
+                            !githubNewRepoPrivate ? "bg-ink text-paper" : "text-ink-soft hover:text-ink"
+                          }`}
+                        >
+                          Public
+                        </button>
+                      </div>
+                    </div>
+
+                    <label className="block">
+                      <span className="eyebrow mb-1.5 block">Path</span>
+                      <input
+                        type="text"
+                        value={githubSelectedPath}
+                        onChange={(event) => setGitHubSelectedPath(event.target.value)}
+                        placeholder="docs/file.md"
+                        className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                      />
+                    </label>
+                  </div>
+
+                  <p className="text-xs text-ink-faint">
+                    Creates a new repository on your GitHub account, initialised with a README on its
+                    default branch, then links this document to it.
+                  </p>
+                </>
+              )}
 
               {githubError ? <p className="text-sm text-signal-danger">{githubError}</p> : null}
               {githubSuccess ? <p className="text-sm text-pine">{githubSuccess}</p> : null}
@@ -2675,29 +2838,44 @@ export default function EditorPage() {
               ) : null}
 
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void loadGitHubRepos();
-                    }}
-                    disabled={githubLoadingRepos}
-                    className="rounded-sm border border-rule-strong bg-paper-card px-3.5 py-2.5 text-sm text-ink-soft transition hover:border-ink hover:text-ink disabled:opacity-60"
-                  >
-                    {githubLoadingRepos ? "Loading repos..." : "Refresh repos"}
-                  </button>
+                {githubMode === "existing" ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void loadGitHubRepos();
+                      }}
+                      disabled={githubLoadingRepos}
+                      className="rounded-sm border border-rule-strong bg-paper-card px-3.5 py-2.5 text-sm text-ink-soft transition hover:border-ink hover:text-ink disabled:opacity-60"
+                    >
+                      {githubLoadingRepos ? "Loading repos..." : "Refresh repos"}
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void handleConnectGitHub();
-                    }}
-                    disabled={githubSaving || githubLoadingRepos}
-                    className="rounded-sm bg-ink px-4 py-2.5 text-sm font-medium text-paper transition hover:bg-clay disabled:opacity-60"
-                  >
-                    {githubSaving ? "Connecting..." : "Connect"}
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleConnectGitHub();
+                      }}
+                      disabled={githubSaving || githubLoadingRepos}
+                      className="rounded-sm bg-ink px-4 py-2.5 text-sm font-medium text-paper transition hover:bg-clay disabled:opacity-60"
+                    >
+                      {githubSaving ? "Connecting..." : "Connect"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleCreateGitHubRepo();
+                      }}
+                      disabled={githubCreatingRepo}
+                      className="rounded-sm bg-ink px-4 py-2.5 text-sm font-medium text-paper transition hover:bg-clay disabled:opacity-60"
+                    >
+                      {githubCreatingRepo ? "Creating repo..." : "Create & link"}
+                    </button>
+                  </div>
+                )}
 
                 <div className="flex items-center gap-2">
                   <button
