@@ -18,6 +18,41 @@ function resolveSelectableValue(selected: string, otherValue: string): string {
   return selected.trim();
 }
 
+function fieldClassName(extraClassName = ""): string {
+  return [
+    "w-full rounded-sm border border-rule-strong bg-paper px-3 py-2 text-sm leading-5 text-ink outline-none transition",
+    "focus:border-clay focus:outline-none focus:ring-0 focus:shadow-none",
+    extraClassName,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function selectClassName(extraClassName = ""): string {
+  return [
+    "w-full appearance-none rounded-sm border border-rule-strong bg-paper px-3 py-2 pr-10 text-sm leading-5 text-ink outline-none transition",
+    "focus:border-clay focus:outline-none focus:ring-0 focus:shadow-none",
+    extraClassName,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function SelectChevron() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      className="h-4 w-4"
+    >
+      <path d="m5 7 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function csrfHeaders(): Record<string, string> {
   return {
     "x-csrf-token": getCsrfToken(),
@@ -182,7 +217,7 @@ export default function OnboardingPage() {
                 type="text"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                className="w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-2.5 text-sm text-ink outline-none transition focus:border-clay"
+                className={fieldClassName()}
                 required
                 disabled={submitting}
               />
@@ -192,28 +227,41 @@ export default function OnboardingPage() {
               <label htmlFor="profession" className="eyebrow mb-1.5 block">
                 Profession
               </label>
-              <input
-                id="profession"
-                type="text"
-                value={profession}
-                onChange={(event) => setProfession(event.target.value)}
-                list="profession-options"
-                placeholder="Search or select profession"
-                className="w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
-                disabled={submitting}
-              />
-              <datalist id="profession-options">
-                {PROFESSION_OPTIONS.map((option) => (
-                  <option key={option} value={option} />
-                ))}
-              </datalist>
+              <div className="relative">
+                <select
+                  id="profession"
+                  value={profession}
+                  onChange={(event) => {
+                    const nextProfession = event.target.value;
+                    setProfession(nextProfession);
+
+                    if (nextProfession !== "Other") {
+                      setProfessionOther("");
+                    }
+                  }}
+                  className={selectClassName()}
+                  disabled={submitting}
+                >
+                  <option value="" disabled>
+                    Select profession
+                  </option>
+                  {PROFESSION_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-ink-ghost">
+                  <SelectChevron />
+                </span>
+              </div>
               {profession === "Other" ? (
                 <input
                   type="text"
                   value={professionOther}
                   onChange={(event) => setProfessionOther(event.target.value)}
                   placeholder="Type your profession"
-                  className="mt-2 w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                  className={fieldClassName("mt-2")}
                   disabled={submitting}
                 />
               ) : null}
@@ -223,28 +271,41 @@ export default function OnboardingPage() {
               <label htmlFor="industry" className="eyebrow mb-1.5 block">
                 Industry
               </label>
-              <input
-                id="industry"
-                type="text"
-                value={industry}
-                onChange={(event) => setIndustry(event.target.value)}
-                list="industry-options"
-                placeholder="Search or select industry"
-                className="w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
-                disabled={submitting}
-              />
-              <datalist id="industry-options">
-                {INDUSTRY_OPTIONS.map((option) => (
-                  <option key={option} value={option} />
-                ))}
-              </datalist>
+              <div className="relative">
+                <select
+                  id="industry"
+                  value={industry}
+                  onChange={(event) => {
+                    const nextIndustry = event.target.value;
+                    setIndustry(nextIndustry);
+
+                    if (nextIndustry !== "Other") {
+                      setIndustryOther("");
+                    }
+                  }}
+                  className={selectClassName()}
+                  disabled={submitting}
+                >
+                  <option value="" disabled>
+                    Select industry
+                  </option>
+                  {INDUSTRY_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-ink-ghost">
+                  <SelectChevron />
+                </span>
+              </div>
               {industry === "Other" ? (
                 <input
                   type="text"
                   value={industryOther}
                   onChange={(event) => setIndustryOther(event.target.value)}
                   placeholder="Type your industry"
-                  className="mt-2 w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                  className={fieldClassName("mt-2")}
                   disabled={submitting}
                 />
               ) : null}
@@ -254,21 +315,27 @@ export default function OnboardingPage() {
               <label htmlFor="country" className="eyebrow mb-1.5 block">
                 Country
               </label>
-              <input
-                id="country"
-                type="text"
-                value={country}
-                onChange={(event) => setCountry(event.target.value)}
-                list="country-options"
-                placeholder="Search and select country"
-                className="w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
-                disabled={submitting}
-              />
-              <datalist id="country-options">
-                {COUNTRY_OPTIONS.map((option) => (
-                  <option key={option} value={option} />
-                ))}
-              </datalist>
+              <div className="relative">
+                <select
+                  id="country"
+                  value={country}
+                  onChange={(event) => setCountry(event.target.value)}
+                  className={selectClassName()}
+                  disabled={submitting}
+                >
+                  <option value="" disabled>
+                    Select country
+                  </option>
+                  {COUNTRY_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-ink-ghost">
+                  <SelectChevron />
+                </span>
+              </div>
             </div>
 
             {error ? (

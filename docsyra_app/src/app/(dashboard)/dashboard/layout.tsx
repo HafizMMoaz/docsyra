@@ -273,7 +273,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
 
           <nav className="flex-1 px-3 py-6">
-            <p className="eyebrow px-3 pb-3 text-ink-ghost">Navigation</p>
             <div className="space-y-0.5">
               {navItems.map((item, index) => {
                 const active = isActive(item.href);
@@ -288,11 +287,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         : "flex items-center gap-3 rounded-sm border border-transparent px-3 py-2 text-sm font-medium text-ink-soft transition hover:bg-paper-sunk hover:text-ink"
                     }
                   >
-                    <span
-                      className={`w-5 font-mono text-[11px] ${active ? "text-clay" : "text-ink-ghost"}`}
-                    >
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
                     {item.label}
                   </Link>
                 );
@@ -314,7 +308,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <input
                 type="text"
                 placeholder="Search documents"
-                className="hidden w-full max-w-xs rounded-sm border border-rule bg-paper px-3 py-1.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay md:block"
+                className="hidden h-9 w-full max-w-xs rounded-sm border border-rule bg-paper px-3 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay focus:outline-none focus:ring-0 focus:shadow-none md:block"
               />
             </div>
             <div className="flex items-center gap-2.5">

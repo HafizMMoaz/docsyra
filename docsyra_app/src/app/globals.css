@@ -126,10 +126,15 @@ body {
 }
 
 /* Focus ring — accent, consistent */
-:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+:where(a, button, [role="button"], summary, [tabindex]):focus-visible {
   outline: 2px solid var(--clay);
   outline-offset: 2px;
   border-radius: 3px;
+}
+
+:where(input, select, textarea):focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 /* ---------------------------------------------------------------------------
