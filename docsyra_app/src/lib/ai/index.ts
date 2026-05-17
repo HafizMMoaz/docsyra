@@ -14,6 +14,7 @@ import {
   type AIProvider,
   type AIProviderConfig,
   type AIProviderId,
+  type AIUserSettings,
 } from "./types";
 
 const PROVIDERS: Record<AIProviderId, AIProvider> = {
@@ -36,25 +37,29 @@ function isProviderId(value: string): value is AIProviderId {
 }
 
 /**
- * Resolves the configured AI provider and its runtime config from `env`.
- * Throws `AIError(…, 500)` for an unknown provider or a missing API key.
+ * Resolves the configured AI provider and its runtime config from user settings.
+ * Throws `AIError(…, 500)` if no key exists.
  */
-export function resolveAIProvider(env: AIEnv): { provider: AIProvider; config: AIProviderConfig } {
-  const providerId = (env.AI_PROVIDER ?? "anthropic").trim();
+export function resolveAIProvider(
+  env: AIEnv,
+  userSettings?: AIUserSettings | null,
+): { provider: AIProvider; config: AIProviderConfig } {
+  const providerId = userSettings?.provider ?? (env.AI_PROVIDER ?? "anthropic").trim();
 
   if (!isProviderId(providerId)) {
     throw new AIError("Unknown AI provider", 500);
   }
 
   const provider = PROVIDERS[providerId];
-  const { apiKey: apiKeyVar, model: modelVar } = ENV_KEYS[providerId];
+  const userProviderSettings = userSettings?.providers?.[providerId];
 
-  const apiKey = (env[apiKeyVar] ?? "").trim();
+  const apiKey = (userProviderSettings?.apiKey ?? "").trim();
   if (!apiKey) {
-    throw new AIError("AI provider is not configured", 500);
+    throw new AIError("Set up AI in AI Settings", 500);
   }
 
-  const model = (env[modelVar] ?? "").trim() || provider.defaultModel;
+  const { model: modelVar } = ENV_KEYS[providerId];
+  const model = (userProviderSettings?.model ?? env[modelVar] ?? "").trim() || provider.defaultModel;
 
   return { provider, config: { apiKey, model } };
 }

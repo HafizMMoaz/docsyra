@@ -5,7 +5,9 @@
  * Do not change this file without updating CONTRACT.md and every consumer.
  */
 
-export type AIProviderId = "anthropic" | "openai" | "groq" | "gemini";
+export const AI_PROVIDER_IDS = ["anthropic", "openai", "groq", "gemini"] as const;
+
+export type AIProviderId = (typeof AI_PROVIDER_IDS)[number];
 
 /** The set of AI actions the editor can invoke. */
 export type AIActionId =
@@ -43,6 +45,16 @@ export type AICompletionRequest = {
 export type AIProviderConfig = {
   apiKey: string;
   model: string;
+};
+
+export type AIProviderSettings = {
+  apiKey: string | null;
+  model: string | null;
+};
+
+export type AIUserSettings = {
+  provider: AIProviderId;
+  providers: Record<AIProviderId, AIProviderSettings>;
 };
 
 /**

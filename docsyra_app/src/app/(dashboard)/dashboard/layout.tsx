@@ -44,6 +44,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     { label: "Dashboard", href: "/dashboard" },
     { label: "My Docs", href: "/dashboard/mydocs" },
     { label: "Settings", href: "/dashboard/settings" },
+    { label: "AI Settings", href: "/dashboard/ai-settings" },
   ] as const;
 
   function isActive(href: string): boolean {

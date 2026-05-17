@@ -5,6 +5,7 @@ import { rejectCsrf } from "@/lib/security/csrf";
 import { resolveAIProvider } from "@/lib/ai";
 import { buildPrompt } from "@/lib/ai/prompts";
 import { AIError, type AIEnv, type AIRunRequestBody } from "@/lib/ai/types";
+import { getUserAISettings } from "@/lib/db/queries";
 
 export const runtime = "edge";
 
@@ -42,7 +43,8 @@ export async function POST(
   let config;
   try {
     prompt = buildPrompt(body);
-    ({ provider, config } = resolveAIProvider(env as AIEnv));
+    const userAISettings = await getUserAISettings(session.user.id, env).catch(() => null);
+    ({ provider, config } = resolveAIProvider(env as AIEnv, userAISettings));
   } catch (error) {
     if (error instanceof AIError) {
       return Response.json({ success: false, error: error.message }, { status: error.status });

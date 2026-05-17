@@ -1,6 +1,7 @@
 import type { DatabaseSession, DatabaseUser } from "lucia";
-import { encryptSecret } from "../auth/two-factor";
+import { decryptSecret, encryptSecret } from "../auth/two-factor";
 import { getDB, type DbEnv } from "./client";
+import { AI_PROVIDER_IDS, type AIProviderId, type AIUserSettings } from "../ai/types";
 
 type DbSessionRecord = {
   id: string;
@@ -186,6 +187,19 @@ type DbNotificationRecord = {
   actor_name?: string | null;
   actor_email?: string | null;
   document_title?: string | null;
+};
+
+type DbAISettingsRecord = {
+  user_id: string;
+  ai_provider: string;
+  anthropic_api_key: string | null;
+  anthropic_model: string | null;
+  openai_api_key: string | null;
+  openai_model: string | null;
+  groq_api_key: string | null;
+  groq_model: string | null;
+  gemini_api_key: string | null;
+  gemini_model: string | null;
 };
 
 export type CollaboratorRole = "viewer" | "editor";
@@ -537,6 +551,129 @@ export async function setUserTwoFactorEnabled(userId: string, enabled: boolean, 
   await db
     .prepare("UPDATE users SET two_factor_enabled = ? WHERE id = ?")
     .bind(enabled ? 1 : 0, userId)
+    .run();
+}
+
+function isAIProviderId(value: string): value is AIProviderId {
+  return AI_PROVIDER_IDS.includes(value as AIProviderId);
+}
+
+async function decryptStoredValue(value: string | null): Promise<string | null> {
+  if (!value) {
+    return null;
+  }
+
+  return await decryptSecret(value);
+}
+
+function normalizeAIProviderId(value: string | null | undefined): AIProviderId {
+  if (value && isAIProviderId(value)) {
+    return value;
+  }
+
+  return "anthropic";
+}
+
+export async function getUserAISettings(userId: string, env?: DbEnv): Promise<AIUserSettings | null> {
+  const db = getDB(env);
+
+  const row = await db
+    .prepare(
+      `SELECT
+        user_id,
+        ai_provider,
+        anthropic_api_key,
+        anthropic_model,
+        openai_api_key,
+        openai_model,
+        groq_api_key,
+        groq_model,
+        gemini_api_key,
+        gemini_model
+      FROM user_ai_settings
+      WHERE user_id = ?
+      LIMIT 1`,
+    )
+    .bind(userId)
+    .first<DbAISettingsRecord>();
+
+  if (!row) {
+    return null;
+  }
+
+  const [anthropicApiKey, openaiApiKey, groqApiKey, geminiApiKey] = await Promise.all([
+    decryptStoredValue(row.anthropic_api_key),
+    decryptStoredValue(row.openai_api_key),
+    decryptStoredValue(row.groq_api_key),
+    decryptStoredValue(row.gemini_api_key),
+  ]);
+
+  return {
+    provider: normalizeAIProviderId(row.ai_provider),
+    providers: {
+      anthropic: { apiKey: anthropicApiKey, model: row.anthropic_model ?? null },
+      openai: { apiKey: openaiApiKey, model: row.openai_model ?? null },
+      groq: { apiKey: groqApiKey, model: row.groq_model ?? null },
+      gemini: { apiKey: geminiApiKey, model: row.gemini_model ?? null },
+    },
+  };
+}
+
+export async function upsertUserAISettings(
+  userId: string,
+  settings: AIUserSettings,
+  env?: DbEnv,
+): Promise<void> {
+  const db = getDB(env);
+  const now = Date.now();
+
+  const encryptedAnthropicKey = settings.providers.anthropic.apiKey ? await encryptSecret(settings.providers.anthropic.apiKey) : null;
+  const encryptedOpenAIKey = settings.providers.openai.apiKey ? await encryptSecret(settings.providers.openai.apiKey) : null;
+  const encryptedGroqKey = settings.providers.groq.apiKey ? await encryptSecret(settings.providers.groq.apiKey) : null;
+  const encryptedGeminiKey = settings.providers.gemini.apiKey ? await encryptSecret(settings.providers.gemini.apiKey) : null;
+
+  await db
+    .prepare(
+      `INSERT INTO user_ai_settings (
+        user_id,
+        ai_provider,
+        anthropic_api_key,
+        anthropic_model,
+        openai_api_key,
+        openai_model,
+        groq_api_key,
+        groq_model,
+        gemini_api_key,
+        gemini_model,
+        created_at,
+        updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET
+        ai_provider = excluded.ai_provider,
+        anthropic_api_key = excluded.anthropic_api_key,
+        anthropic_model = excluded.anthropic_model,
+        openai_api_key = excluded.openai_api_key,
+        openai_model = excluded.openai_model,
+        groq_api_key = excluded.groq_api_key,
+        groq_model = excluded.groq_model,
+        gemini_api_key = excluded.gemini_api_key,
+        gemini_model = excluded.gemini_model,
+        updated_at = excluded.updated_at`,
+    )
+    .bind(
+      userId,
+      normalizeAIProviderId(settings.provider),
+      encryptedAnthropicKey,
+      settings.providers.anthropic.model ?? null,
+      encryptedOpenAIKey,
+      settings.providers.openai.model ?? null,
+      encryptedGroqKey,
+      settings.providers.groq.model ?? null,
+      encryptedGeminiKey,
+      settings.providers.gemini.model ?? null,
+      now,
+      now,
+    )
     .run();
 }
 
