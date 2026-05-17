@@ -30,7 +30,7 @@ export default function Home() {
     <div className="min-h-screen">
       {/* Top bar */}
       <header className="border-b border-rule">
-        <div className="mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between px-5 sm:px-8">
+        <div className="mx-auto flex h-16 w-full max-w-300 items-center justify-between px-5 sm:px-8">
           <span className="font-display text-xl font-bold tracking-tight text-ink">
             Docsyra
           </span>
@@ -43,7 +43,7 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-[1200px] px-5 sm:px-8">
+      <main className="mx-auto w-full max-w-300 px-5 sm:px-8">
         {/* Hero */}
         <section className="border-b border-rule py-20 sm:py-28">
           <p className="reveal eyebrow">
@@ -149,7 +149,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-rule">
-        <div className="mx-auto flex w-full max-w-[1200px] flex-wrap items-center justify-between gap-3 px-5 py-8 sm:px-8">
+        <div className="mx-auto flex w-full max-w-300 flex-wrap items-center justify-between gap-3 px-5 py-8 sm:px-8">
           <span className="font-display text-sm font-bold tracking-tight text-ink">
             Docsyra
           </span>
