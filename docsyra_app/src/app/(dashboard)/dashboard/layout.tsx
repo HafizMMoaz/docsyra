@@ -43,6 +43,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const navItems = [
     { label: "Dashboard", href: "/dashboard" },
     { label: "My Docs", href: "/dashboard/mydocs" },
+    { label: "AI Skills", href: "/dashboard/ai-skills" },
     { label: "Settings", href: "/dashboard/settings" },
     { label: "AI Settings", href: "/dashboard/ai-settings" },
   ] as const;

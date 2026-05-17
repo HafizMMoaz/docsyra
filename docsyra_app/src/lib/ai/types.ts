@@ -57,6 +57,23 @@ export type AIUserSettings = {
   providers: Record<AIProviderId, AIProviderSettings>;
 };
 
+export type AISkill = {
+  id: string;
+  name: string;
+  description: string | null;
+  instructions: string;
+  enabled: boolean;
+  createdAt: number;
+  updatedAt: number;
+};
+
+export type AISkillInput = {
+  name: string;
+  description?: string | null;
+  instructions: string;
+  enabled?: boolean;
+};
+
 /**
  * A provider streams the assistant response as incremental plain-text deltas.
  * Implementations MUST:

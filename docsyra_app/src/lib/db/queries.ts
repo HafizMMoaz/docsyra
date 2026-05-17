@@ -1,7 +1,7 @@
 import type { DatabaseSession, DatabaseUser } from "lucia";
 import { decryptSecret, encryptSecret } from "../auth/two-factor";
 import { getDB, type DbEnv } from "./client";
-import { AI_PROVIDER_IDS, type AIProviderId, type AIUserSettings } from "../ai/types";
+import { AI_PROVIDER_IDS, type AIProviderId, type AIUserSettings, type AISkill, type AISkillInput } from "../ai/types";
 
 type DbSessionRecord = {
   id: string;
@@ -200,6 +200,17 @@ type DbAISettingsRecord = {
   groq_model: string | null;
   gemini_api_key: string | null;
   gemini_model: string | null;
+};
+
+type DbAISkillRecord = {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  instructions: string;
+  enabled: number;
+  created_at: number;
+  updated_at: number;
 };
 
 export type CollaboratorRole = "viewer" | "editor";
@@ -675,6 +686,150 @@ export async function upsertUserAISettings(
       now,
     )
     .run();
+}
+
+function mapAISkill(row: DbAISkillRecord): AISkill {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    instructions: row.instructions,
+    enabled: row.enabled === 1,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function normalizeAISkillInput(input: AISkillInput): AISkillInput {
+  return {
+    name: input.name.trim(),
+    description: input.description?.trim() || null,
+    instructions: input.instructions.trim(),
+    enabled: input.enabled ?? true,
+  };
+}
+
+export async function getUserAISkills(userId: string, env?: DbEnv): Promise<AISkill[]> {
+  const db = getDB(env);
+
+  const result = await db
+    .prepare(
+      `SELECT
+        id,
+        user_id,
+        name,
+        description,
+        instructions,
+        enabled,
+        created_at,
+        updated_at
+      FROM user_ai_skills
+      WHERE user_id = ?
+      ORDER BY updated_at DESC, created_at DESC`,
+    )
+    .bind(userId)
+    .all<DbAISkillRecord>();
+
+  return (result.results ?? []).map(mapAISkill);
+}
+
+export async function createUserAISkill(
+  userId: string,
+  input: AISkillInput,
+  env?: DbEnv,
+): Promise<AISkill> {
+  const db = getDB(env);
+  const now = Date.now();
+  const skillId = crypto.randomUUID();
+  const normalized = normalizeAISkillInput(input);
+
+  await db
+    .prepare(
+      `INSERT INTO user_ai_skills (
+        id,
+        user_id,
+        name,
+        description,
+        instructions,
+        enabled,
+        created_at,
+        updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .bind(
+      skillId,
+      userId,
+      normalized.name,
+      normalized.description,
+      normalized.instructions,
+      normalized.enabled ? 1 : 0,
+      now,
+      now,
+    )
+    .run();
+
+  return {
+    id: skillId,
+    name: normalized.name,
+    description: normalized.description,
+    instructions: normalized.instructions,
+    enabled: normalized.enabled ?? true,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+export async function updateUserAISkill(
+  userId: string,
+  skillId: string,
+  input: AISkillInput,
+  env?: DbEnv,
+): Promise<AISkill | null> {
+  const db = getDB(env);
+  const now = Date.now();
+  const normalized = normalizeAISkillInput(input);
+
+  const result = await db
+    .prepare(
+      `UPDATE user_ai_skills
+       SET name = ?, description = ?, instructions = ?, enabled = ?, updated_at = ?
+       WHERE id = ? AND user_id = ?`,
+    )
+    .bind(
+      normalized.name,
+      normalized.description,
+      normalized.instructions,
+      normalized.enabled ? 1 : 0,
+      now,
+      skillId,
+      userId,
+    )
+    .run();
+
+  if (!result.meta.changes) {
+    return null;
+  }
+
+  return {
+    id: skillId,
+    name: normalized.name,
+    description: normalized.description,
+    instructions: normalized.instructions,
+    enabled: normalized.enabled ?? true,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+export async function deleteUserAISkill(userId: string, skillId: string, env?: DbEnv): Promise<boolean> {
+  const db = getDB(env);
+
+  const result = await db
+    .prepare("DELETE FROM user_ai_skills WHERE id = ? AND user_id = ?")
+    .bind(skillId, userId)
+    .run();
+
+  return Boolean(result.meta.changes);
 }
 
 export async function replaceBackupCodes(
