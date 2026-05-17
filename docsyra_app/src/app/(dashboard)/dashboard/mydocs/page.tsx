@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { getCsrfToken } from "@/lib/security/csrf-client";
 
 type Collaborator = {
   id: string;
@@ -53,12 +54,20 @@ function formatRelativeTime(value: number): string {
   return `${diffDays}d ago`;
 }
 
+function csrfHeaders(): Record<string, string> {
+  return {
+    "x-csrf-token": getCsrfToken(),
+  };
+}
+
 export default function MyDocsPage() {
   const router = useRouter();
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [creatingDocument, setCreatingDocument] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const creatingDocumentRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -110,9 +119,42 @@ export default function MyDocsPage() {
     };
   }, []);
 
+  async function handleCreateDocument() {
+    if (creatingDocumentRef.current) {
+      return;
+    }
+
+    creatingDocumentRef.current = true;
+    setCreatingDocument(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/docs/create", {
+        method: "POST",
+        headers: csrfHeaders(),
+      });
+
+      const data = (await response.json()) as { success?: boolean; id?: string; error?: string };
+
+      if (!response.ok || !data.success || !data.id) {
+        setError(data.error ?? "Failed to create document");
+        creatingDocumentRef.current = false;
+        setCreatingDocument(false);
+        return;
+      }
+
+      router.push(`/editor/${data.id}`);
+    } catch {
+      setError("Failed to create document");
+      creatingDocumentRef.current = false;
+      setCreatingDocument(false);
+    }
+  }
+
   return (
     <section className="mx-auto max-w-5xl space-y-8">
       <div className="reveal flex flex-wrap items-end justify-between gap-4 border-b border-rule pb-6">
+        
         <div>
           <p className="eyebrow text-ink-ghost">The catalogue</p>
           <h1 className="font-display mt-2 text-3xl font-bold tracking-tight text-ink">My Docs</h1>
@@ -120,12 +162,14 @@ export default function MyDocsPage() {
             Every document you own or can access, with collaborators and last update time.
           </p>
         </div>
-        {stats ? (
-          <div className="text-right">
-            <p className="font-display text-3xl font-bold tabular-nums text-ink">{stats.totalDocuments}</p>
-            <p className="eyebrow text-[0.6rem] text-ink-ghost">{stats.collaborators} collaborators</p>
-          </div>
-        ) : null}
+        <div className="flex items-center gap-3">
+          {stats ? (
+            <div className="text-right">
+              <p className="font-display text-3xl font-bold tabular-nums text-ink">{stats.totalDocuments}</p>
+              <p className="eyebrow text-[0.6rem] text-ink-ghost">{stats.collaborators} collaborators</p>
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {error ? (

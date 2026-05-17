@@ -23,6 +23,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [loadingSession, setLoadingSession] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [creatingDocument, setCreatingDocument] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState<string | null>(null);
@@ -39,6 +40,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const notificationsRef = useRef<HTMLDivElement | null>(null);
   const previousUnreadCountRef = useRef(0);
   const notificationsSeededRef = useRef(false);
+  const creatingDocumentRef = useRef(false);
 
   const navItems = [
     { label: "Dashboard", href: "/dashboard" },
@@ -99,6 +101,35 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       router.replace("/login");
       router.refresh();
       setLoggingOut(false);
+    }
+  }
+
+  async function handleCreateDocument() {
+    if (creatingDocumentRef.current) {
+      return;
+    }
+
+    creatingDocumentRef.current = true;
+    setCreatingDocument(true);
+
+    try {
+      const response = await fetch("/api/docs/create", {
+        method: "POST",
+        headers: csrfHeaders(),
+      });
+
+      const data = (await response.json()) as { success?: boolean; id?: string; error?: string };
+
+      if (!response.ok || !data.success || !data.id) {
+        creatingDocumentRef.current = false;
+        setCreatingDocument(false);
+        return;
+      }
+
+      router.push(`/editor/${data.id}`);
+    } catch {
+      creatingDocumentRef.current = false;
+      setCreatingDocument(false);
     }
   }
 
@@ -307,6 +338,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <span className="font-display text-base font-bold tracking-tight text-ink md:hidden">
                 Docsyra
               </span>
+              <button
+                type="button"
+                onClick={() => void handleCreateDocument()}
+                disabled={creatingDocument}
+                className="hidden shrink-0 items-center gap-1.5 rounded-sm bg-ink px-3 py-1.5 text-sm font-medium text-paper transition hover:bg-ink-soft disabled:opacity-60 md:inline-flex"
+              >
+                <span aria-hidden>+</span>
+                {creatingDocument ? "Creating..." : "New doc"}
+              </button>
               <input
                 type="text"
                 placeholder="Search documents"
