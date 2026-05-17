@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { getCsrfToken } from "@/lib/security/csrf-client";
 
 type Collaborator = {
   id: string;
@@ -53,12 +54,20 @@ function formatRelativeTime(value: number): string {
   return `${diffDays}d ago`;
 }
 
+function csrfHeaders(): Record<string, string> {
+  return {
+    "x-csrf-token": getCsrfToken(),
+  };
+}
+
 export default function MyDocsPage() {
   const router = useRouter();
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [creatingDocument, setCreatingDocument] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const creatingDocumentRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -110,77 +119,132 @@ export default function MyDocsPage() {
     };
   }, []);
 
+  async function handleCreateDocument() {
+    if (creatingDocumentRef.current) {
+      return;
+    }
+
+    creatingDocumentRef.current = true;
+    setCreatingDocument(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/docs/create", {
+        method: "POST",
+        headers: csrfHeaders(),
+      });
+
+      const data = (await response.json()) as { success?: boolean; id?: string; error?: string };
+
+      if (!response.ok || !data.success || !data.id) {
+        setError(data.error ?? "Failed to create document");
+        creatingDocumentRef.current = false;
+        setCreatingDocument(false);
+        return;
+      }
+
+      router.push(`/editor/${data.id}`);
+    } catch {
+      setError("Failed to create document");
+      creatingDocumentRef.current = false;
+      setCreatingDocument(false);
+    }
+  }
+
   return (
-    <section className="space-y-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <section className="mx-auto max-w-5xl space-y-8">
+      <div className="reveal flex flex-wrap items-end justify-between gap-4 border-b border-rule pb-6">
+        
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">My Docs</h1>
-          <p className="mt-1 text-sm text-slate-500">All documents you own or can access, with collaborators and last update time.</p>
-        </div>
-        {stats ? (
-          <p className="text-sm text-slate-500">
-            {stats.totalDocuments} docs • {stats.collaborators} collaborators
+          <p className="eyebrow text-ink-ghost">The catalogue</p>
+          <h1 className="font-display mt-2 text-3xl font-bold tracking-tight text-ink">My Docs</h1>
+          <p className="mt-1.5 text-sm text-ink-faint">
+            Every document you own or can access, with collaborators and last update time.
           </p>
-        ) : null}
+        </div>
+        <div className="flex items-center gap-3">
+          {stats ? (
+            <div className="text-right">
+              <p className="font-display text-3xl font-bold tabular-nums text-ink">{stats.totalDocuments}</p>
+              <p className="eyebrow text-[0.6rem] text-ink-ghost">{stats.collaborators} collaborators</p>
+            </div>
+          ) : null}
+        </div>
       </div>
 
-      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+      {error ? (
+        <p className="rounded-sm border border-signal-danger/30 bg-paper-sunk px-3 py-2 text-sm text-signal-danger">
+          {error}
+        </p>
+      ) : null}
 
       {loading ? (
-        <div className="rounded-2xl border border-black/10 bg-white p-10 text-center shadow-sm">
-          <p className="text-sm text-slate-500">Loading documents...</p>
+        <div className="rounded-md border border-rule bg-paper p-12 text-center">
+          <p className="text-sm text-ink-faint">Pulling the catalogue…</p>
         </div>
       ) : null}
 
       {!loading && documents.length > 0 ? (
-        <div className="grid gap-4">
-          {documents.map((document) => (
+        <div className="reveal overflow-hidden rounded-md border border-rule" style={{ animationDelay: "80ms" }}>
+          {documents.map((document, index) => (
             <button
               key={document.id}
               type="button"
               onClick={() => router.push(`/editor/${document.id}`)}
-              className="rounded-2xl border border-black/10 bg-white p-5 text-left shadow-sm transition hover:border-black/20 hover:bg-slate-50"
+              className="group flex w-full items-start gap-4 border-b border-rule bg-paper px-5 py-4 text-left transition last:border-b-0 hover:bg-paper-sunk"
             >
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="truncate text-base font-semibold text-slate-900">{document.title || "Untitled"}</h2>
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
-                      {document.visibility === "public" ? "Public" : "Private"}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm text-slate-500">Last updated {formatRelativeTime(document.updated_at)} • {formatTimestamp(document.updated_at)}</p>
-                </div>
-                <p className="text-xs text-slate-500">Open</p>
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                {document.collaborators.length > 0 ? (
-                  document.collaborators.map((collaborator) => (
-                    <span
-                      key={collaborator.id}
-                      className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-xs text-slate-700"
-                    >
-                      <span className="h-2 w-2 rounded-full bg-sky-500" />
-                      {collaborator.name || collaborator.email || "Unknown user"}
-                      <span className="text-slate-400">{collaborator.role}</span>
-                    </span>
-                  ))
-                ) : (
-                  <span className="rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs text-slate-500">
-                    No collaborators yet
+              <span className="mt-0.5 w-6 shrink-0 font-mono text-xs text-ink-ghost">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h2 className="truncate text-sm font-semibold text-ink group-hover:text-clay">
+                    {document.title || "Untitled"}
+                  </h2>
+                  <span
+                    className={`rounded-sm border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+                      document.visibility === "public"
+                        ? "border-pine/30 bg-pine-wash text-pine"
+                        : "border-rule text-ink-faint"
+                    }`}
+                  >
+                    {document.visibility === "public" ? "Public" : "Private"}
                   </span>
-                )}
+                </div>
+                <p className="mt-1 font-mono text-xs text-ink-faint">
+                  Updated {formatRelativeTime(document.updated_at)} · {formatTimestamp(document.updated_at)}
+                </p>
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  {document.collaborators.length > 0 ? (
+                    document.collaborators.map((collaborator) => (
+                      <span
+                        key={collaborator.id}
+                        className="inline-flex items-center gap-1.5 rounded-sm border border-rule px-2 py-0.5 text-xs text-ink-soft"
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full bg-clay" />
+                        {collaborator.name || collaborator.email || "Unknown user"}
+                        <span className="text-ink-ghost">· {collaborator.role}</span>
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs text-ink-ghost">No collaborators yet</span>
+                  )}
+                </div>
               </div>
+              <span className="mt-0.5 shrink-0 text-ink-ghost transition group-hover:translate-x-0.5 group-hover:text-clay" aria-hidden>
+                →
+              </span>
             </button>
           ))}
         </div>
       ) : null}
 
       {!loading && documents.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
-          <p className="text-sm font-medium text-slate-700">No documents yet</p>
-          <p className="mt-1 text-sm text-slate-500">Create a new document from the dashboard to get started.</p>
+        <div className="reveal rounded-md border border-dashed border-rule-strong bg-paper p-12 text-center">
+          <p className="font-display text-lg font-bold tracking-tight text-ink">The catalogue is empty</p>
+          <p className="mt-1.5 text-sm text-ink-faint">
+            Create a new document from the dashboard to get started.
+          </p>
         </div>
       ) : null}
     </section>

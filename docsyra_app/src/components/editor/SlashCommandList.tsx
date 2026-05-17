@@ -73,7 +73,7 @@ const SlashCommandList = forwardRef<SlashCommandListHandle, SlashCommandListProp
       return (
         <div className="slash-menu max-h-80 w-72 overflow-auto">
           <p className="slash-hint">Type a command or select below...</p>
-          <p className="px-2 py-1 text-sm text-slate-500">No commands found</p>
+          <p className="px-2 py-1 text-sm text-ink-faint">No commands found</p>
         </div>
       );
     }

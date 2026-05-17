@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getCsrfToken } from "@/lib/security/csrf-client";
 
 type OverviewDocument = {
@@ -64,6 +64,9 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  // Hard re-entry guard — survives across renders, unlike the `creating` state
+  // which only gates the button after React has re-rendered it.
+  const creatingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -119,6 +122,12 @@ export default function DashboardPage() {
   }, []);
 
   async function handleCreateDocument() {
+    // Block concurrent creates: a slow first-time navigation to /editor/[id]
+    // would otherwise let repeated clicks each create a new document.
+    if (creatingRef.current) {
+      return;
+    }
+    creatingRef.current = true;
     setCreating(true);
     setError(null);
 
@@ -134,44 +143,58 @@ export default function DashboardPage() {
 
       if (!response.ok || !data.success || !data.id) {
         setError(data.error ?? "Failed to create document");
+        creatingRef.current = false;
+        setCreating(false);
         return;
       }
 
+      // Success — navigate, and deliberately keep `creating` true so the
+      // button stays disabled until this page unmounts. Resetting it here
+      // would re-enable the button during a slow route transition.
       router.push(`/editor/${data.id}`);
     } catch {
       setError("Failed to create document");
-    } finally {
+      creatingRef.current = false;
       setCreating(false);
     }
   }
 
   return (
-    <section className="space-y-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <section className="mx-auto max-w-5xl space-y-10">
+      <div className="reveal flex flex-wrap items-end justify-between gap-4 border-b border-rule pb-6">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="mt-1 text-sm text-slate-500">Usage, recent activity, and your latest documents.</p>
+          <p className="eyebrow text-ink-ghost">Workspace overview</p>
+          <h1 className="font-display mt-2 text-3xl font-bold tracking-tight text-ink">Dashboard</h1>
+          <p className="mt-1.5 text-sm text-ink-faint">Usage, recent activity, and your latest documents.</p>
         </div>
         <button
           type="button"
           onClick={handleCreateDocument}
           disabled={creating}
-          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+          className="inline-flex items-center gap-1.5 rounded-sm bg-ink px-4 py-2 text-sm font-medium text-paper transition hover:bg-ink-soft disabled:opacity-60"
         >
-          {creating ? "Creating..." : "New Document"}
+          <span aria-hidden>+</span>
+          {creating ? "Creating…" : "New document"}
         </button>
       </div>
 
-      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+      {error ? (
+        <p className="rounded-sm border border-signal-danger/30 bg-paper-sunk px-3 py-2 text-sm text-signal-danger">
+          {error}
+        </p>
+      ) : null}
 
       {loading ? (
-        <div className="rounded-2xl border border-black/10 bg-white p-10 text-center shadow-sm">
-          <p className="text-sm text-slate-500">Loading dashboard data...</p>
+        <div className="rounded-md border border-rule bg-paper p-12 text-center">
+          <p className="text-sm text-ink-faint">Gathering your documents…</p>
         </div>
       ) : null}
 
       {!loading && stats ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+        <div
+          className="reveal grid grid-cols-2 gap-px overflow-hidden rounded-md border border-rule bg-rule sm:grid-cols-3 xl:grid-cols-6"
+          style={{ animationDelay: "80ms" }}
+        >
           {[
             { label: "Documents", value: stats.totalDocuments },
             { label: "Owned", value: stats.ownedDocuments },
@@ -180,33 +203,40 @@ export default function DashboardPage() {
             { label: "Collaborators", value: stats.collaborators },
             { label: "Recent logs", value: stats.recentActivityCount },
           ].map((item) => (
-            <div key={item.label} className="rounded-2xl border border-black/10 bg-white p-4 shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-slate-500">{item.label}</p>
-              <p className="mt-2 text-2xl font-semibold text-slate-900">{item.value}</p>
+            <div key={item.label} className="bg-paper px-4 py-5">
+              <p className="eyebrow text-[0.6rem] text-ink-ghost">{item.label}</p>
+              <p className="font-display mt-2 text-2xl font-bold tabular-nums text-ink">{item.value}</p>
             </div>
           ))}
         </div>
       ) : null}
 
       {!loading && recentActivity.length > 0 ? (
-        <div className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900">Recent activity</h2>
-              <p className="mt-1 text-sm text-slate-500">Latest views, edits, opens, and joins across your documents.</p>
-            </div>
+        <div className="reveal" style={{ animationDelay: "140ms" }}>
+          <div className="mb-3 flex items-baseline gap-3">
+            <h2 className="font-display text-base font-bold tracking-tight text-ink">Recent activity</h2>
+            <span className="h-px flex-1 bg-rule" />
+            <span className="eyebrow text-[0.6rem] text-ink-ghost">Views · Edits · Joins</span>
           </div>
 
-          <div className="mt-4 space-y-3">
+          <div className="overflow-hidden rounded-md border border-rule">
             {recentActivity.map((item) => (
-              <div key={item.id} className="flex items-start justify-between gap-4 rounded-xl border border-black/5 px-3 py-3">
-                <div>
-                  <p className="text-sm font-medium text-slate-900">{item.document_title || "Untitled"}</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {item.action.toUpperCase()} by {item.name || item.email || "Unknown user"}
-                  </p>
+              <div
+                key={item.id}
+                className="flex items-center justify-between gap-4 border-b border-rule bg-paper px-4 py-3 last:border-b-0"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="w-12 shrink-0 font-mono text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+                    {item.action}
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-ink">{item.document_title || "Untitled"}</p>
+                    <p className="text-xs text-ink-faint">
+                      by {item.name || item.email || "Unknown user"}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xs text-slate-500">{formatRelativeTime(item.created_at)}</p>
+                <p className="shrink-0 font-mono text-xs text-ink-ghost">{formatRelativeTime(item.created_at)}</p>
               </div>
             ))}
           </div>
@@ -214,24 +244,37 @@ export default function DashboardPage() {
       ) : null}
 
       {!loading && documents.length > 0 ? (
-        <div className="overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm">
-          <div className="border-b border-black/5 px-5 py-4">
-            <h2 className="text-lg font-semibold text-slate-900">Recent documents</h2>
-            <p className="mt-1 text-sm text-slate-500">Open the latest work or jump into a shared doc.</p>
+        <div className="reveal" style={{ animationDelay: "200ms" }}>
+          <div className="mb-3 flex items-baseline gap-3">
+            <h2 className="font-display text-base font-bold tracking-tight text-ink">Recent documents</h2>
+            <span className="h-px flex-1 bg-rule" />
+            <span className="eyebrow text-[0.6rem] text-ink-ghost">Latest work</span>
           </div>
-          <ul className="divide-y divide-black/5">
-            {documents.map((document) => (
-              <li key={document.id}>
+          <ul className="overflow-hidden rounded-md border border-rule">
+            {documents.map((document, index) => (
+              <li key={document.id} className="border-b border-rule last:border-b-0">
                 <button
                   type="button"
                   onClick={() => router.push(`/editor/${document.id}`)}
-                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-slate-50"
+                  className="group flex w-full items-center gap-4 bg-paper px-4 py-3 text-left transition hover:bg-paper-sunk"
                 >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-slate-900">{document.title || "Untitled"}</p>
-                    <p className="mt-1 text-xs text-slate-500">Last updated {formatRelativeTime(document.updated_at)}</p>
+                  <span className="w-6 shrink-0 font-mono text-xs text-ink-ghost">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-ink group-hover:text-clay">
+                      {document.title || "Untitled"}
+                    </p>
+                    <p className="text-xs text-ink-faint">
+                      Last updated {formatRelativeTime(document.updated_at)}
+                    </p>
                   </div>
-                  <p className="shrink-0 text-xs text-slate-500">{formatTimestamp(document.updated_at)}</p>
+                  <p className="hidden shrink-0 font-mono text-xs text-ink-ghost sm:block">
+                    {formatTimestamp(document.updated_at)}
+                  </p>
+                  <span className="text-ink-ghost transition group-hover:translate-x-0.5 group-hover:text-clay" aria-hidden>
+                    →
+                  </span>
                 </button>
               </li>
             ))}
@@ -240,9 +283,18 @@ export default function DashboardPage() {
       ) : null}
 
       {!loading && documents.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
-          <p className="text-sm font-medium text-slate-700">No documents yet</p>
-          <p className="mt-1 text-sm text-slate-500">Create a new document to start writing.</p>
+        <div className="reveal rounded-md border border-dashed border-rule-strong bg-paper p-12 text-center">
+          <p className="font-display text-lg font-bold tracking-tight text-ink">A blank page awaits</p>
+          <p className="mt-1.5 text-sm text-ink-faint">Create a new document to start writing.</p>
+          <button
+            type="button"
+            onClick={handleCreateDocument}
+            disabled={creating}
+            className="mt-5 inline-flex items-center gap-1.5 rounded-sm bg-ink px-4 py-2 text-sm font-medium text-paper transition hover:bg-ink-soft disabled:opacity-60"
+          >
+            <span aria-hidden>+</span>
+            {creating ? "Creating…" : "New document"}
+          </button>
         </div>
       ) : null}
     </section>

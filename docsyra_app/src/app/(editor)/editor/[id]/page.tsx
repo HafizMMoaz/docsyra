@@ -11,6 +11,8 @@ import { getSession } from "@/lib/auth/session-client";
 import { generateDiff } from "@/lib/diff/generateDiff";
 import type { User } from "@/types";
 import RichTextEditor from "@/components/editor/RichTextEditor";
+import AIAskPanel from "@/components/editor/ai/AIAskPanel";
+import type { Editor } from "@tiptap/core";
 
 type DocumentDetail = {
   id: string;
@@ -280,6 +282,10 @@ export default function EditorPage() {
   const [githubSaving, setGitHubSaving] = useState(false);
   const [githubError, setGitHubError] = useState<string | null>(null);
   const [githubSuccess, setGitHubSuccess] = useState<string | null>(null);
+  const [githubMode, setGitHubMode] = useState<"existing" | "create">("existing");
+  const [githubNewRepoName, setGitHubNewRepoName] = useState("");
+  const [githubNewRepoPrivate, setGitHubNewRepoPrivate] = useState(true);
+  const [githubCreatingRepo, setGitHubCreatingRepo] = useState(false);
   const [githubSyncStatus, setGitHubSyncStatus] = useState<GitHubSyncStatus>("unknown");
   const [githubSyncStatusLoading, setGitHubSyncStatusLoading] = useState(false);
   const [githubLastSyncedAt, setGitHubLastSyncedAt] = useState<number | null>(null);
@@ -297,6 +303,7 @@ export default function EditorPage() {
   const [collaboratorsLoading, setCollaboratorsLoading] = useState(false);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [ownerId, setOwnerId] = useState<string | null>(null);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [logsOpen, setLogsOpen] = useState(false);
   const [logsLoading, setLogsLoading] = useState(false);
   const [logsError, setLogsError] = useState<string | null>(null);
@@ -342,6 +349,7 @@ export default function EditorPage() {
   const wsRef = useRef<WebSocket | null>(null);
   const awarenessRef = useRef<Awareness | null>(null);
   const isSavingRef = useRef(false);
+  const editorInstanceRef = useRef<Editor | null>(null);
 
   function publishPresenceUpdate(update: { cursor?: { anchor: number; head: number } | null; typing?: boolean; contextLabel?: string | null }) {
     const awareness = awarenessRef.current;
@@ -1676,6 +1684,7 @@ export default function EditorPage() {
 
   async function openGitHubModal() {
     setGitHubModalOpen(true);
+    setGitHubMode("existing");
     setGitHubError(null);
     setGitHubSuccess(null);
     setGitHubPreviewReady(false);
@@ -1744,6 +1753,76 @@ export default function EditorPage() {
       setGitHubError("Failed to connect GitHub repository");
     } finally {
       setGitHubSaving(false);
+    }
+  }
+
+  async function handleCreateGitHubRepo() {
+    const name = githubNewRepoName.trim();
+    const path = githubSelectedPath.trim();
+
+    if (!name) {
+      setGitHubError("Repository name is required");
+      return;
+    }
+
+    if (!/^[A-Za-z0-9._-]+$/.test(name)) {
+      setGitHubError("Use letters, numbers, dots, hyphens, or underscores only");
+      return;
+    }
+
+    if (!path) {
+      setGitHubError("Path is required");
+      return;
+    }
+
+    setGitHubCreatingRepo(true);
+    setGitHubError(null);
+    setGitHubSuccess(null);
+
+    try {
+      const response = await fetch(`/api/docs/${id}/create-github-repo`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...csrfHeaders(),
+        },
+        body: JSON.stringify({
+          name,
+          private: githubNewRepoPrivate,
+          path,
+        }),
+      });
+
+      const data = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+        mapping?: {
+          github_repo?: string | null;
+          github_branch?: string | null;
+          github_path?: string | null;
+        };
+      };
+
+      if (!response.ok || !data.success) {
+        setGitHubError(data.error ?? "Failed to create GitHub repository");
+        return;
+      }
+
+      setGitHubAccountConnected(true);
+      setGitHubRepo(data.mapping?.github_repo ?? null);
+      setGitHubBranch(data.mapping?.github_branch ?? "main");
+      setGitHubPath(data.mapping?.github_path ?? path);
+      setGitHubSuccess("Repository created and linked. The next save will push this document.");
+      setGitHubSyncStatus("unknown");
+      setGitHubPreviewReady(false);
+      setGitHubPreviewDiff([]);
+      setGitHubNewRepoName("");
+      setGitHubMode("existing");
+      await loadGitHubRepos();
+    } catch {
+      setGitHubError("Failed to create GitHub repository");
+    } finally {
+      setGitHubCreatingRepo(false);
     }
   }
 
@@ -1858,30 +1937,31 @@ export default function EditorPage() {
     if (status === "synced") {
       return {
         label: "GitHub synced",
-        classes: "bg-emerald-100 text-emerald-700",
+        classes: "bg-pine-wash text-pine",
       };
     }
 
     if (status === "diverged") {
       return {
         label: "GitHub diverged",
-        classes: "bg-amber-100 text-amber-700",
+        classes: "bg-clay-wash text-clay",
       };
     }
 
     return {
       label: "GitHub unknown",
-      classes: "bg-slate-100 text-slate-700",
+      classes: "bg-paper-sunk text-ink-faint",
     };
   }
 
   if (noAccess) {
     return (
-      <main className="min-h-screen bg-[#f7f6f3] text-slate-900">
+      <main className="min-h-screen text-ink">
         <div className="mx-auto flex min-h-screen w-full max-w-3xl items-center justify-center px-4">
-          <div className="w-full rounded-2xl border border-black/10 bg-white p-6 text-center shadow-sm">
-            <h1 className="text-xl font-semibold">No access</h1>
-            <p className="mt-2 text-sm text-slate-600">You do not have permission to view this document.</p>
+          <div className="reveal w-full rounded-sm border border-rule-strong bg-paper-card p-8 text-center">
+            <p className="eyebrow" style={{ color: "var(--clay)" }}>Restricted</p>
+            <h1 className="font-display mt-2 text-2xl font-semibold text-ink">No access</h1>
+            <p className="mt-2 text-sm text-ink-faint">You do not have permission to view this document.</p>
           </div>
         </div>
       </main>
@@ -1889,14 +1969,14 @@ export default function EditorPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f6f3] text-slate-900">
+    <main className="min-h-screen text-ink">
       <div className="mx-auto flex min-h-screen w-full flex-col">
-        <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-black/5 bg-white/85 px-4 py-3 backdrop-blur md:px-6">
+        <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-rule bg-paper-raised/95 px-4 py-3 backdrop-blur md:px-6">
           <input
             type="text"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            className="w-full max-w-2xl rounded-xl border border-black/10 bg-white px-3 py-2 text-base font-medium outline-none placeholder:text-slate-400 focus:border-black/20"
+            className="font-display w-full max-w-2xl rounded-sm border border-transparent bg-transparent px-2 py-2 text-xl font-semibold text-ink outline-none transition placeholder:text-ink-ghost hover:border-rule focus:border-clay disabled:text-ink-faint"
             aria-label="Document title"
             disabled={loading || !canEdit}
           />
@@ -1906,7 +1986,7 @@ export default function EditorPage() {
               <div className="flex items-center gap-1" title={`${participantCount} participants in this document`}>
                 {currentUser ? (
                   <div
-                    className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-xs font-semibold text-white shadow-sm"
+                    className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-paper-raised text-xs font-semibold text-white"
                     style={{ backgroundColor: colorFromKey(currentUser.id) }}
                     aria-label="You"
                   >
@@ -1921,7 +2001,7 @@ export default function EditorPage() {
                     <button
                       type="button"
                       key={`header-${peer.connectionId}`}
-                      className={`-ml-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-xs font-semibold text-white shadow-sm first:ml-0 ${highlightedPresenceId === focusId ? "ring-2 ring-sky-300" : ""}`}
+                      className={`-ml-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-paper-raised text-xs font-semibold text-white transition first:ml-0 ${highlightedPresenceId === focusId ? "ring-2 ring-clay" : ""}`}
                       style={{ backgroundColor: peer.color }}
                       aria-label={label}
                       onMouseEnter={() => setHighlightedPresenceId(focusId)}
@@ -1944,7 +2024,7 @@ export default function EditorPage() {
                   );
                 })}
                 {overflowPresenceCount > 0 ? (
-                  <div className="-ml-1 flex h-8 min-w-8 items-center justify-center rounded-full border-2 border-white bg-slate-800 px-1.5 text-xs font-semibold text-white shadow-sm">
+                  <div className="-ml-1 flex h-8 min-w-8 items-center justify-center rounded-full border-2 border-paper-raised bg-ink px-1.5 text-xs font-semibold text-paper">
                     +{overflowPresenceCount}
                   </div>
                 ) : null}
@@ -1953,12 +2033,12 @@ export default function EditorPage() {
 
             <div className="flex flex-col gap-1">
               {githubRepo ? (
-                <span className={`rounded-full px-2 py-1 text-xs font-semibold ${formatGitHubSyncBadge(githubSyncStatus).classes}`}>
+                <span className={`rounded-sm px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${formatGitHubSyncBadge(githubSyncStatus).classes}`}>
                   {githubSyncStatusLoading ? "Checking GitHub..." : formatGitHubSyncBadge(githubSyncStatus).label}
                 </span>
               ) : null}
               {githubAccountConnected && !githubLinked ? (
-                <p className="text-[11px] leading-tight text-slate-500">GitHub account connected, document not linked yet</p>
+                <p className="text-[11px] leading-tight text-ink-faint">GitHub account connected, document not linked yet</p>
               ) : null}
             </div>
             <div className="relative">
@@ -1972,11 +2052,11 @@ export default function EditorPage() {
                     void loadNotifications(12);
                   }
                 }}
-                className="relative rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                className="relative rounded-sm border border-rule-strong bg-paper-card px-3 py-2 text-sm font-medium text-ink-soft transition hover:border-ink hover:text-ink"
               >
                 Notifications
                 {unreadNotificationCount > 0 ? (
-                  <span className="ml-2 rounded-full bg-rose-600 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+                  <span className="ml-2 rounded-full bg-clay px-1.5 py-0.5 text-[11px] font-semibold text-paper">
                     {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
                   </span>
                 ) : null}
@@ -1984,66 +2064,71 @@ export default function EditorPage() {
 
               {notificationsOpen ? (
                 <div
-                  className="absolute right-0 z-50 mt-2 w-96 rounded-2xl border border-black/10 bg-white p-3 shadow-[0_24px_60px_rgba(15,23,42,0.12)]"
+                  className="absolute right-0 z-50 mt-2 w-96 rounded-sm border border-rule bg-paper-card shadow-lg"
                   onClick={(event) => event.stopPropagation()}
                 >
-                  <div className="mb-2 flex items-center justify-between gap-2 border-b border-black/5 pb-2">
-                    <h3 className="text-sm font-semibold text-slate-900">Notifications</h3>
+                  <div className="flex items-center justify-between gap-2 border-b border-rule px-3.5 py-2.5">
+                    <p className="eyebrow text-clay">Notifications</p>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => {
                           void markAllNotificationsAsRead();
                         }}
-                        className="rounded-md border border-black/10 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50"
+                        className="rounded-sm border border-rule-strong px-2 py-1 text-xs text-ink-soft transition hover:border-ink hover:text-ink"
                       >
                         Mark all read
                       </button>
                       <button
                         type="button"
                         onClick={() => setNotificationsOpen(false)}
-                        className="rounded-md border border-black/10 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50"
+                        className="rounded-sm border border-rule-strong px-2 py-1 text-xs text-ink-soft transition hover:border-ink hover:text-ink"
                       >
                         Close
                       </button>
                     </div>
                   </div>
 
-                  {notificationsLoading ? <p className="text-sm text-slate-500">Loading notifications...</p> : null}
-                  {notificationsError ? <p className="text-sm text-rose-600">{notificationsError}</p> : null}
+                  {notificationsLoading ? <p className="px-3.5 py-3 text-sm text-ink-faint">Loading notifications…</p> : null}
+                  {notificationsError ? <p className="px-3.5 py-3 text-sm text-signal-danger">{notificationsError}</p> : null}
 
                   {!notificationsLoading && notifications.length === 0 ? (
-                    <p className="text-sm text-slate-500">No notifications yet.</p>
+                    <p className="px-3.5 py-6 text-center text-sm text-ink-faint">No notifications yet.</p>
                   ) : null}
 
-                  <div className="max-h-80 space-y-2 overflow-auto pr-1">
-                    {notifications.map((notification) => (
-                      <button
-                        key={notification.id}
-                        type="button"
-                        onClick={() => {
-                          void markNotificationAsRead(notification.id);
-                          setNotificationsOpen(false);
+                  {notifications.length > 0 ? (
+                    <div className="max-h-80 divide-y divide-rule overflow-auto">
+                      {notifications.map((notification) => (
+                        <button
+                          key={notification.id}
+                          type="button"
+                          onClick={() => {
+                            void markNotificationAsRead(notification.id);
+                            setNotificationsOpen(false);
 
-                          if (notification.thread_id) {
-                            openThread(notification.thread_id);
-                          }
-                        }}
-                        className={`w-full rounded-xl border px-2 py-2 text-left transition hover:bg-slate-50 ${notification.read_at ? "border-black/10 bg-white" : "border-sky-200 bg-sky-50"}`}
-                      >
-                        <div className="mb-1 flex items-center justify-between gap-2">
-                          <p className="text-xs font-semibold text-slate-700">{notification.type === "mention" ? "Mention" : "Comment"}</p>
-                          <p className="text-[11px] text-slate-500">{formatNotificationTime(notification.created_at)}</p>
-                        </div>
-                        <p className="text-sm text-slate-800">{notification.message}</p>
-                      </button>
-                    ))}
-                  </div>
+                            if (notification.thread_id) {
+                              openThread(notification.thread_id);
+                            }
+                          }}
+                          className={`w-full px-3.5 py-2.5 text-left transition hover:bg-paper-sunk ${notification.read_at ? "" : "bg-clay-wash/50"}`}
+                        >
+                          <div className="mb-1 flex items-center justify-between gap-2">
+                            <span className="flex items-center gap-1.5">
+                              {notification.read_at ? null : <span className="h-1.5 w-1.5 rounded-full bg-clay" aria-hidden="true" />}
+                              <span className="eyebrow text-[0.6rem] text-clay">{notification.type === "mention" ? "Mention" : "Comment"}</span>
+                            </span>
+                            <span className="text-[11px] text-ink-faint">{formatNotificationTime(notification.created_at)}</span>
+                          </div>
+                          <p className="text-sm text-ink-soft">{notification.message}</p>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </div>
             {visibility === "public" ? (
-              <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">Public document</span>
+              <span className="rounded-sm bg-pine-wash px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-pine">Public document</span>
             ) : null}
             {accessRole === "owner" ? (
               <select
@@ -2052,7 +2137,7 @@ export default function EditorPage() {
                   void handleVisibilityChange(event.target.value === "public" ? "public" : "private");
                 }}
                 disabled={visibilitySaving}
-                className="rounded-xl border border-black/10 bg-white px-2 py-2 text-sm text-slate-700 outline-none focus:border-black/20 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-sm border border-rule-strong bg-paper-card px-2.5 py-2 text-sm text-ink-soft outline-none transition focus:border-clay disabled:cursor-not-allowed disabled:opacity-60"
                 aria-label="Document visibility"
               >
                 <option value="private">Private</option>
@@ -2065,18 +2150,30 @@ export default function EditorPage() {
                 onClick={() => {
                   void openGitHubModal();
                 }}
-                className="rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                className="rounded-sm border border-rule-strong bg-paper-card px-3 py-2 text-sm font-medium text-ink-soft transition hover:border-ink hover:text-ink"
               >
                 {githubLinked ? "Manage GitHub link" : "Link GitHub repo"}
               </button>
             ) : null}
+            <button
+              type="button"
+              onClick={() => setAiPanelOpen((current) => !current)}
+              aria-pressed={aiPanelOpen}
+              className={`rounded-sm border px-3 py-2 text-sm font-medium transition ${
+                aiPanelOpen
+                  ? "border-clay bg-clay-wash text-clay"
+                  : "border-rule-strong bg-paper-card text-ink-soft hover:border-ink hover:text-ink"
+              }`}
+            >
+              ✦ Ask AI
+            </button>
             {accessRole === "owner" ? (
               <button
                 type="button"
                 onClick={() => {
                   void openHistoryPanel();
                 }}
-                className="rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                className="rounded-sm border border-rule-strong bg-paper-card px-3 py-2 text-sm font-medium text-ink-soft transition hover:border-ink hover:text-ink"
               >
                 History
               </button>
@@ -2087,7 +2184,7 @@ export default function EditorPage() {
                 onClick={() => {
                   void openLogsPanel();
                 }}
-                className="rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                className="rounded-sm border border-rule-strong bg-paper-card px-3 py-2 text-sm font-medium text-ink-soft transition hover:border-ink hover:text-ink"
               >
                 Logs
               </button>
@@ -2098,7 +2195,7 @@ export default function EditorPage() {
                 onClick={() => {
                   void openShareModal();
                 }}
-                className="rounded-xl border border-black/10 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                className="rounded-sm border border-rule-strong bg-paper-card px-3 py-2 text-sm font-medium text-ink-soft transition hover:border-ink hover:text-ink"
               >
                 Share
               </button>
@@ -2109,37 +2206,37 @@ export default function EditorPage() {
                 onClick={() => {
                   void handleManualSaveCheckpoint();
                 }}
-                className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+                className="rounded-sm bg-ink px-3.5 py-2 text-sm font-medium text-paper transition hover:bg-ink-soft"
               >
                 Save checkpoint
               </button>
             ) : null}
-            <p className="min-w-20 text-right text-sm font-medium text-slate-500" aria-live="polite">
+            <p className="min-w-20 text-right text-xs font-medium uppercase tracking-wider text-ink-faint" aria-live="polite">
               {getSavingLabel()}
             </p>
           </div>
         </header>
 
         {verificationHint ? (
-          <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800 md:px-6">{verificationHint}</div>
+          <div className="border-b border-clay/30 bg-clay-wash/50 px-4 py-2 text-sm text-signal-warn md:px-6">{verificationHint}</div>
         ) : null}
 
         {githubRepo ? (
-          <div className="border-b border-indigo-200 bg-indigo-50 px-4 py-2 text-xs text-indigo-800 md:px-6">
+          <div className="border-b border-pine/25 bg-pine-wash/50 px-4 py-2 text-xs text-pine md:px-6">
             Linked GitHub source: {githubRepo} • {githubBranch || "main"} • {githubPath || "(no path)"}
             {githubLastSyncedAt ? ` • Last synced ${new Date(githubLastSyncedAt).toLocaleString()}` : ""}
           </div>
         ) : null}
 
         <section className="flex-1 p-4 md:p-6">
-          {error ? <p className="mb-3 text-sm text-red-600">{error}</p> : null}
-          <div className="mb-4 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          {error ? <p className="mb-3 rounded-sm border-l-2 border-signal-danger bg-clay-wash/60 px-3 py-2 text-sm text-signal-danger">{error}</p> : null}
+          <div className="mb-4 rounded-sm border border-rule bg-paper-card px-4 py-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Active collaborators</p>
+                <p className="eyebrow text-ink-faint">Active collaborators</p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   {currentUser ? (
-                    <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2 py-1">
+                    <div className="flex items-center gap-2 rounded-sm border border-rule bg-paper-raised px-2 py-1">
                       <div
                         className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold text-white"
                         style={{ backgroundColor: colorFromKey(currentUser.id) }}
@@ -2147,14 +2244,14 @@ export default function EditorPage() {
                       >
                         {getInitials(getDisplayName(currentUser))}
                       </div>
-                      <span className="text-sm font-medium text-slate-700">You</span>
+                      <span className="text-sm font-medium text-ink">You</span>
                     </div>
                   ) : null}
                   {remotePresencePeers.map((peer) => {
                     const label = getDisplayName(peer);
 
                     return (
-                      <div key={peer.connectionId} className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2 py-1">
+                      <div key={peer.connectionId} className="flex items-center gap-2 rounded-sm border border-rule bg-paper-raised px-2 py-1">
                         {peer.avatarUrl ? (
                           <img
                             src={peer.avatarUrl}
@@ -2171,8 +2268,8 @@ export default function EditorPage() {
                           </div>
                         )}
                         <div className="leading-tight">
-                          <p className="text-sm font-medium text-slate-700">{label}</p>
-                          <p className="text-[11px] text-slate-500">{peer.typing ? "Typing..." : "Online"}</p>
+                          <p className="text-sm font-medium text-ink">{label}</p>
+                          <p className="text-[11px] text-pine">{peer.typing ? "Typing…" : "Online"}</p>
                         </div>
                       </div>
                     );
@@ -2181,9 +2278,9 @@ export default function EditorPage() {
               </div>
 
               {typingPeers.length > 0 ? (
-                <p className="text-sm font-medium text-slate-600">{typingLabel}</p>
+                <p className="text-sm font-medium text-pine">{typingLabel}</p>
               ) : (
-                <p className="text-sm text-slate-500">Live cursor tracking is active.</p>
+                <p className="text-sm text-ink-faint">Live cursor tracking is active.</p>
               )}
             </div>
           </div>
@@ -2193,6 +2290,9 @@ export default function EditorPage() {
               <RichTextEditor
                 value={content}
                 onChange={handleContentChange}
+                onEditorReady={(editorInstance) => {
+                  editorInstanceRef.current = editorInstance;
+                }}
                 onCommentSelectionChange={setSelectedCommentRange}
                 onPresenceStateChange={publishPresenceUpdate}
                 highlightedPresenceId={highlightedPresenceId}
@@ -2230,16 +2330,16 @@ export default function EditorPage() {
                     : undefined
                 }
               />
-              {!canEdit && !loading ? <p className="mt-3 text-sm text-slate-500">You have viewer access (read-only).</p> : null}
+              {!canEdit && !loading ? <p className="mt-3 text-sm text-ink-faint">You have viewer access (read-only).</p> : null}
             </div>
 
-            <aside className="comments-sidebar rounded-2xl border border-slate-200 bg-white p-3 shadow-sm lg:sticky lg:top-4 lg:h-fit">
-              <div className="mb-3 border-b border-slate-200 pb-3">
+            <aside className="comments-sidebar rounded-sm border border-rule bg-paper-card lg:sticky lg:top-20 lg:h-fit">
+              <div className="border-b border-rule px-3 py-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-slate-900">Comments</h3>
+                    <p className="eyebrow text-clay">Comments</p>
                     {commentActivityCount > 0 ? (
-                      <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-700">{commentActivityCount} new</span>
+                      <span className="rounded-full bg-clay px-2 py-0.5 text-[11px] font-semibold text-paper">{commentActivityCount} new</span>
                     ) : null}
                   </div>
                   <div className="flex items-center gap-2">
@@ -2248,7 +2348,7 @@ export default function EditorPage() {
                       onClick={() => {
                         setShowResolvedThreads((current) => !current);
                       }}
-                      className="rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                      className="rounded-sm border border-rule-strong px-2 py-1 text-xs font-medium text-ink-soft transition hover:bg-paper-sunk"
                     >
                       {showResolvedThreads ? "Hide resolved" : "Show resolved"}
                     </button>
@@ -2258,16 +2358,16 @@ export default function EditorPage() {
                         setCommentActivityCount(0);
                         void loadCommentThreads({ resetNotification: true });
                       }}
-                      className="rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                      className="rounded-sm border border-rule-strong px-2 py-1 text-xs font-medium text-ink-soft transition hover:bg-paper-sunk"
                     >
                       Refresh
                     </button>
                   </div>
                 </div>
 
-                {resolvedCommentCount > 0 ? <p className="mt-2 text-[11px] text-slate-500">{resolvedCommentCount} resolved thread{resolvedCommentCount === 1 ? "" : "s"}.</p> : null}
+                {resolvedCommentCount > 0 ? <p className="mt-2 text-[11px] text-ink-faint">{resolvedCommentCount} resolved thread{resolvedCommentCount === 1 ? "" : "s"}.</p> : null}
 
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-2 text-xs text-ink-faint">
                   {selectedCommentRange
                     ? `Selection: ${Math.max(0, selectedCommentRange.to - selectedCommentRange.from)} chars`
                     : "Select text in editor to start a thread."}
@@ -2278,7 +2378,7 @@ export default function EditorPage() {
                   onChange={(event) => setCommentDraft(event.target.value)}
                   placeholder="Add a comment on selected text..."
                   disabled={!canEdit}
-                  className="mt-2 min-h-20 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50"
+                  className="mt-2 min-h-20 w-full rounded-sm border border-rule-strong bg-paper-raised px-2.5 py-2 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay disabled:cursor-not-allowed disabled:bg-paper-sunk"
                 />
 
                 <button
@@ -2287,27 +2387,27 @@ export default function EditorPage() {
                     void handleCreateCommentThread();
                   }}
                   disabled={!canEdit || !selectedCommentRange || commentDraft.trim().length === 0}
-                  className="mt-2 w-full rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="mt-2 w-full rounded-sm bg-ink px-3 py-2 text-sm font-medium text-paper transition hover:bg-ink-soft disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Create thread
                 </button>
 
-                {commentError ? <p className="mt-2 text-xs text-red-600">{commentError}</p> : null}
+                {commentError ? <p className="mt-2 text-xs text-signal-danger">{commentError}</p> : null}
               </div>
 
-              {commentsLoading ? <p className="text-sm text-slate-500">Loading comments...</p> : null}
+              <div className="space-y-3 px-3 py-3">
+                {commentsLoading ? <p className="text-sm text-ink-faint">Loading comments…</p> : null}
 
-              {!commentsLoading && visibleCommentThreads.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  {commentThreads.length === 0
-                    ? "No comments yet. Select text to start a discussion."
-                    : showResolvedThreads
-                      ? "No open comment threads yet."
-                      : "All comment threads are resolved. Turn on Show resolved to review them."}
-                </p>
-              ) : null}
+                {!commentsLoading && visibleCommentThreads.length === 0 ? (
+                  <p className="text-sm text-ink-faint">
+                    {commentThreads.length === 0
+                      ? "No comments yet. Select text to start a discussion."
+                      : showResolvedThreads
+                        ? "No open comment threads yet."
+                        : "All comment threads are resolved. Turn on Show resolved to review them."}
+                  </p>
+                ) : null}
 
-              <div className="space-y-3">
                 {visibleCommentThreads.map((thread) => {
                   const isActive = activeCommentThreadId === thread.id;
                   const threadDetails = thread.comments[0] ? getCommentAuthorDetails(thread.comments[0]) : null;
@@ -2315,12 +2415,12 @@ export default function EditorPage() {
                   return (
                     <article
                       key={thread.id}
-                      className={`rounded-xl border p-2 transition ${isActive ? "border-slate-900 bg-slate-50" : "border-slate-200 bg-white"} ${thread.resolved ? "opacity-60" : "opacity-100"}`}
+                      className={`rounded-sm border p-2.5 transition ${isActive ? "border-clay bg-clay-wash/40" : "border-rule bg-paper-raised"} ${thread.resolved ? "opacity-60" : "opacity-100"}`}
                     >
                       <button
                         type="button"
                         onClick={() => openThread(thread.id)}
-                        className="mb-2 block w-full rounded-md px-1 py-1 text-left hover:bg-slate-100"
+                        className="mb-2 block w-full rounded-sm px-1 py-1 text-left transition hover:bg-paper-sunk"
                       >
                         <div className="flex items-start gap-2">
                           {threadDetails ? (
@@ -2329,18 +2429,18 @@ export default function EditorPage() {
                             </div>
                           ) : null}
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-medium text-slate-700">Anchor range: {thread.selection_from} to {thread.selection_to}</p>
-                            <p className="mt-0.5 text-xs text-slate-500">{formatCommentTime(thread.created_at)}</p>
-                            {thread.resolved ? <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-700">Resolved</p> : null}
+                            <p className="font-mono text-[11px] text-ink-faint">Anchor {thread.selection_from}–{thread.selection_to}</p>
+                            <p className="mt-0.5 text-xs text-ink-faint">{formatCommentTime(thread.created_at)}</p>
+                            {thread.resolved ? <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-pine">Resolved</p> : null}
                           </div>
                         </div>
-                        {thread.selection_text ? <p className="mt-1 text-xs italic text-slate-600">&quot;{thread.selection_text}&quot;</p> : null}
-                        {getCommentContextLabel(thread) ? <p className="mt-1 text-[11px] text-slate-500">{getCommentContextLabel(thread)}</p> : null}
+                        {thread.selection_text ? <p className="font-display mt-1 text-xs italic text-ink-soft">&ldquo;{thread.selection_text}&rdquo;</p> : null}
+                        {getCommentContextLabel(thread) ? <p className="mt-1 text-[11px] text-ink-faint">{getCommentContextLabel(thread)}</p> : null}
                       </button>
 
                       <div className="space-y-2">
                         {thread.comments.map((comment) => (
-                          <div key={comment.id} className="flex gap-2 rounded-md bg-slate-100 px-2 py-1.5">
+                          <div key={comment.id} className="flex gap-2 rounded-sm bg-paper-sunk px-2 py-1.5">
                             <div
                               className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-white"
                               style={{ backgroundColor: getCommentAuthorDetails(comment).color }}
@@ -2349,10 +2449,10 @@ export default function EditorPage() {
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center justify-between gap-2">
-                                <p className="text-xs font-semibold text-slate-700">{getCommentAuthorDetails(comment).label}</p>
-                                <p className="text-[11px] text-slate-500">{formatCommentTime(comment.created_at)}</p>
+                                <p className="text-xs font-semibold text-ink">{getCommentAuthorDetails(comment).label}</p>
+                                <p className="text-[11px] text-ink-faint">{formatCommentTime(comment.created_at)}</p>
                               </div>
-                              <p className="text-sm text-slate-800">{comment.content}</p>
+                              <p className="text-sm text-ink-soft">{comment.content}</p>
                             </div>
                           </div>
                         ))}
@@ -2370,7 +2470,7 @@ export default function EditorPage() {
                           }
                           placeholder={canEdit ? "Write a reply..." : "Read-only"}
                           disabled={!canEdit}
-                          className="w-full rounded-md border border-slate-300 px-2 py-1 text-sm outline-none transition focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50"
+                          className="w-full rounded-sm border border-rule-strong bg-paper-card px-2.5 py-1.5 text-sm text-ink outline-none transition focus:border-clay disabled:cursor-not-allowed disabled:bg-paper-sunk"
                         />
                         <button
                           type="button"
@@ -2378,7 +2478,7 @@ export default function EditorPage() {
                             void handleReplyToThread(thread.id);
                           }}
                           disabled={!canEdit || (replyDrafts[thread.id] ?? "").trim().length === 0}
-                          className="rounded-md border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="rounded-sm border border-rule-strong px-2.5 py-1.5 text-xs font-semibold text-ink-soft transition hover:bg-paper-sunk disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           Reply
                         </button>
@@ -2388,7 +2488,7 @@ export default function EditorPage() {
                             void handleSetThreadResolved(thread.id, !Boolean(thread.resolved));
                           }}
                           disabled={!canEdit}
-                          className="rounded-md border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="rounded-sm border border-rule-strong px-2.5 py-1.5 text-xs font-semibold text-ink-soft transition hover:bg-paper-sunk disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {thread.resolved ? "Reopen" : "Resolve"}
                         </button>
@@ -2414,27 +2514,27 @@ export default function EditorPage() {
 
               return (
                 <div
-                  className="fixed z-40 w-80 rounded-xl border border-slate-200 bg-white p-3 shadow-xl"
+                  className="fixed z-40 w-80 rounded-sm border border-rule bg-paper-card p-3 shadow-lg"
                   style={{ left, top }}
                   onClick={(event) => event.stopPropagation()}
                 >
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Thread</p>
+                  <div className="-mx-3 mb-2 flex items-center justify-between gap-2 border-b border-rule px-3 pb-2">
+                    <p className="eyebrow text-clay">Thread</p>
                     <button
                       type="button"
                       onClick={() => setCommentPopover(null)}
-                      className="rounded px-1.5 py-1 text-xs text-slate-500 hover:bg-slate-100"
+                      className="rounded-sm border border-rule-strong px-1.5 py-0.5 text-xs text-ink-soft transition hover:border-ink hover:text-ink"
                     >
                       Close
                     </button>
                   </div>
 
-                  {thread.selection_text ? <p className="mb-2 text-xs italic text-slate-600">&quot;{thread.selection_text}&quot;</p> : null}
-                  {getCommentContextLabel(thread) ? <p className="mb-2 text-[11px] text-slate-500">{getCommentContextLabel(thread)}</p> : null}
+                  {thread.selection_text ? <p className="font-display mb-2 text-xs italic text-ink-soft">&ldquo;{thread.selection_text}&rdquo;</p> : null}
+                  {getCommentContextLabel(thread) ? <p className="mb-2 text-[11px] text-ink-faint">{getCommentContextLabel(thread)}</p> : null}
 
                   <div className="max-h-48 space-y-2 overflow-auto pr-1">
                     {thread.comments.map((comment) => (
-                      <div key={comment.id} className="flex gap-2 rounded-md bg-slate-100 px-2 py-1.5">
+                      <div key={comment.id} className="flex gap-2 rounded-sm bg-paper-sunk px-2 py-1.5">
                         <div
                           className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-white"
                           style={{ backgroundColor: getCommentAuthorDetails(comment).color }}
@@ -2442,8 +2542,8 @@ export default function EditorPage() {
                           {getCommentAuthorDetails(comment).initials}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold text-slate-700">{getCommentAuthorDetails(comment).label}</p>
-                          <p className="text-sm text-slate-800">{comment.content}</p>
+                          <p className="text-xs font-semibold text-ink">{getCommentAuthorDetails(comment).label}</p>
+                          <p className="text-sm text-ink-soft">{comment.content}</p>
                         </div>
                       </div>
                     ))}
@@ -2461,7 +2561,7 @@ export default function EditorPage() {
                       }
                       placeholder={canEdit ? "Reply..." : "Read-only"}
                       disabled={!canEdit}
-                      className="w-full rounded-md border border-slate-300 px-2 py-1 text-sm outline-none transition focus:border-slate-400 disabled:cursor-not-allowed disabled:bg-slate-50"
+                      className="w-full rounded-sm border border-rule-strong bg-paper-card px-2.5 py-1.5 text-sm text-ink outline-none transition focus:border-clay disabled:cursor-not-allowed disabled:bg-paper-sunk"
                     />
                     <button
                       type="button"
@@ -2469,7 +2569,7 @@ export default function EditorPage() {
                         void handleReplyToThread(thread.id);
                       }}
                       disabled={!canEdit || (replyDrafts[thread.id] ?? "").trim().length === 0}
-                      className="rounded-md border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="rounded-sm border border-rule-strong px-2.5 py-1.5 text-xs font-semibold text-ink-soft transition hover:bg-paper-sunk disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       Send
                     </button>
@@ -2479,7 +2579,7 @@ export default function EditorPage() {
                         void handleSetThreadResolved(thread.id, !Boolean(thread.resolved));
                       }}
                       disabled={!canEdit}
-                      className="rounded-md border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="rounded-sm border border-rule-strong px-2.5 py-1.5 text-xs font-semibold text-ink-soft transition hover:bg-paper-sunk disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {thread.resolved ? "Reopen" : "Resolve"}
                     </button>
@@ -2492,104 +2592,112 @@ export default function EditorPage() {
       </div>
 
       {shareOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-lg rounded-xl border border-slate-200 bg-white p-4 shadow-xl md:p-5">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-slate-900">Share document</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 px-4 backdrop-blur-[2px]" role="dialog" aria-modal="true">
+          <div className="reveal w-full max-w-lg rounded-sm border border-rule bg-paper-card shadow-lg">
+            <div className="flex items-center justify-between gap-3 border-b border-rule px-5 py-3.5 md:px-6">
+              <div>
+                <p className="eyebrow text-clay">Sharing</p>
+                <h2 className="font-display mt-0.5 text-lg font-semibold tracking-tight text-ink">Share document</h2>
+              </div>
               <button
                 type="button"
                 onClick={() => setShareOpen(false)}
-                className="rounded-md px-2 py-1 text-sm text-slate-600 transition hover:bg-slate-100"
+                className="rounded-sm border border-rule-strong px-2.5 py-1 text-sm text-ink-soft transition hover:border-ink hover:text-ink"
               >
                 Close
               </button>
             </div>
 
-            <div className="mt-4 grid gap-2 md:grid-cols-[1fr_auto_auto]">
-              <input
-                type="email"
-                value={inviteEmail}
-                onChange={(event) => setInviteEmail(event.target.value)}
-                placeholder="user@example.com"
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-              />
-              <select
-                value={inviteRole}
-                onChange={(event) => setInviteRole(event.target.value === "editor" ? "editor" : "viewer")}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-slate-400"
-              >
-                <option value="viewer">Viewer</option>
-                <option value="editor">Editor</option>
-              </select>
-              <button
-                type="button"
-                onClick={() => {
-                  void handleInvite();
-                }}
-                disabled={inviteBusy}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {inviteBusy ? "Inviting..." : "Invite"}
-              </button>
-            </div>
-
-            {shareError ? <p className="mt-3 text-sm text-red-600">{shareError}</p> : null}
-            {shareSuccess ? <p className="mt-3 text-sm text-emerald-600">{shareSuccess}</p> : null}
-            {verificationHint ? (
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <p className="text-sm text-amber-700">{verificationHint}</p>
+            <div className="px-5 py-5 md:px-6">
+              <p className="eyebrow mb-2 text-ink-faint">Invite by email</p>
+              <div className="grid gap-2 md:grid-cols-[1fr_auto_auto]">
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(event) => setInviteEmail(event.target.value)}
+                  placeholder="user@example.com"
+                  className="rounded-sm border border-rule-strong bg-paper px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                />
+                <select
+                  value={inviteRole}
+                  onChange={(event) => setInviteRole(event.target.value === "editor" ? "editor" : "viewer")}
+                  className="rounded-sm border border-rule-strong bg-paper px-3 py-2.5 text-sm text-ink outline-none transition focus:border-clay"
+                >
+                  <option value="viewer">Viewer</option>
+                  <option value="editor">Editor</option>
+                </select>
                 <button
                   type="button"
                   onClick={() => {
-                    void handleResendVerification();
+                    void handleInvite();
                   }}
-                  disabled={resendVerificationBusy}
-                  className="rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={inviteBusy}
+                  className="rounded-sm bg-ink px-4 py-2.5 text-sm font-medium text-paper transition hover:bg-ink-soft disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {resendVerificationBusy ? "Sending..." : "Resend verification email"}
+                  {inviteBusy ? "Inviting..." : "Invite"}
                 </button>
               </div>
-            ) : null}
 
-            <div className="mt-4 rounded-lg border border-slate-200">
-              {collaboratorsLoading ? (
-                <p className="px-3 py-4 text-sm text-slate-500">Loading collaborators...</p>
-              ) : collaborators.length === 0 ? (
-                <p className="px-3 py-4 text-sm text-slate-500">No collaborators yet.</p>
-              ) : (
-                <ul className="divide-y divide-slate-200">
-                  {collaborators.map((collaborator) => (
-                    <li key={collaborator.id} className="flex items-center justify-between gap-3 px-3 py-3">
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">{collaborator.name || collaborator.email || "Unknown user"}</p>
-                        <p className="text-xs text-slate-500">{collaborator.email || "No email"} • {collaborator.role}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          void handleRemoveCollaborator(collaborator.user_id);
-                        }}
-                        disabled={ownerId === collaborator.user_id}
-                        className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        Remove
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {shareError ? <p className="mt-3 text-sm text-signal-danger">{shareError}</p> : null}
+              {shareSuccess ? <p className="mt-3 text-sm text-pine">{shareSuccess}</p> : null}
+              {verificationHint ? (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <p className="text-sm text-signal-warn">{verificationHint}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handleResendVerification();
+                    }}
+                    disabled={resendVerificationBusy}
+                    className="rounded-sm border border-clay/40 bg-clay-wash px-2.5 py-1.5 text-xs font-medium text-clay transition hover:bg-clay hover:text-paper disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {resendVerificationBusy ? "Sending..." : "Resend verification email"}
+                  </button>
+                </div>
+              ) : null}
+
+              <p className="eyebrow mb-2 mt-5 text-ink-faint">People with access</p>
+              <div className="rounded-sm border border-rule">
+                {collaboratorsLoading ? (
+                  <p className="px-3 py-4 text-sm text-ink-faint">Loading collaborators…</p>
+                ) : collaborators.length === 0 ? (
+                  <p className="px-3 py-6 text-center text-sm text-ink-faint">No collaborators yet.</p>
+                ) : (
+                  <ul className="divide-y divide-rule">
+                    {collaborators.map((collaborator) => (
+                      <li key={collaborator.id} className="flex items-center justify-between gap-3 px-3 py-3">
+                        <div>
+                          <p className="text-sm font-medium text-ink">{collaborator.name || collaborator.email || "Unknown user"}</p>
+                          <p className="text-xs text-ink-faint">{collaborator.email || "No email"} · {collaborator.role}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void handleRemoveCollaborator(collaborator.user_id);
+                          }}
+                          disabled={ownerId === collaborator.user_id}
+                          className="rounded-sm border border-rule-strong px-3 py-1.5 text-xs font-medium text-ink-soft transition hover:border-ink hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Remove
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </div>
         </div>
       ) : null}
 
       {githubModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-4 shadow-xl md:p-5">
-            <div className="flex items-center justify-between gap-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 px-4 backdrop-blur-[2px]" role="dialog" aria-modal="true">
+          <div className="reveal w-full max-w-2xl rounded-sm border border-rule bg-paper-card shadow-lg">
+            <div className="flex items-start justify-between gap-3 border-b border-rule px-5 py-3.5 md:px-6">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">{githubLinked ? "Manage GitHub link" : "Link GitHub repo"}</h2>
-                <p className="text-sm text-slate-500">
+                <p className="eyebrow text-clay">GitHub</p>
+                <h2 className="font-display mt-0.5 text-lg font-semibold tracking-tight text-ink">{githubLinked ? "Manage GitHub link" : "Link GitHub repo"}</h2>
+                <p className="mt-0.5 text-sm text-ink-faint">
                   {githubLinked
                     ? "Update the repository, branch, or path used for document sync."
                     : "Choose a GitHub repository and path to sync this document."}
@@ -2598,67 +2706,155 @@ export default function EditorPage() {
               <button
                 type="button"
                 onClick={() => setGitHubModalOpen(false)}
-                className="rounded-md px-2 py-1 text-sm text-slate-600 transition hover:bg-slate-100"
+                className="rounded-sm border border-rule-strong px-2.5 py-1 text-sm text-ink-soft transition hover:border-ink hover:text-ink"
               >
                 Close
               </button>
             </div>
 
-            <div className="mt-4 space-y-3">
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Repository</span>
-                <select
-                  value={githubSelectedRepo}
-                  onChange={(event) => {
-                    const nextRepo = event.target.value;
-                    setGitHubSelectedRepo(nextRepo);
-
-                    const matched = githubRepoOptions.find((repo) => repo.full_name === nextRepo);
-                    if (matched && (!githubSelectedBranch || githubSelectedBranch === "main")) {
-                      setGitHubSelectedBranch(matched.default_branch || "main");
-                    }
+            <div className="space-y-3 px-5 py-5 md:px-6">
+              <div className="flex gap-1 rounded-sm border border-rule-strong bg-paper-raised p-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGitHubMode("existing");
+                    setGitHubError(null);
+                    setGitHubSuccess(null);
                   }}
-                  disabled={githubLoadingRepos}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-slate-400 disabled:opacity-60"
+                  className={`flex-1 rounded-sm px-3 py-2 text-sm font-medium transition ${
+                    githubMode === "existing" ? "bg-ink text-paper" : "text-ink-soft hover:text-ink"
+                  }`}
                 >
-                  <option value="">Select repository</option>
-                  {githubRepoOptions.map((repo) => (
-                    <option key={repo.id} value={repo.full_name}>
-                      {repo.full_name}{repo.private ? " (private)" : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <div className="grid gap-3 md:grid-cols-2">
-                <label className="block">
-                  <span className="mb-1 block text-sm font-medium text-slate-700">Branch</span>
-                  <input
-                    type="text"
-                    value={githubSelectedBranch}
-                    onChange={(event) => setGitHubSelectedBranch(event.target.value)}
-                    placeholder="main"
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-1 block text-sm font-medium text-slate-700">Path</span>
-                  <input
-                    type="text"
-                    value={githubSelectedPath}
-                    onChange={(event) => setGitHubSelectedPath(event.target.value)}
-                    placeholder="docs/file.md"
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                  />
-                </label>
+                  Select existing
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGitHubMode("create");
+                    setGitHubError(null);
+                    setGitHubSuccess(null);
+                  }}
+                  className={`flex-1 rounded-sm px-3 py-2 text-sm font-medium transition ${
+                    githubMode === "create" ? "bg-ink text-paper" : "text-ink-soft hover:text-ink"
+                  }`}
+                >
+                  Create new
+                </button>
               </div>
 
-              {githubError ? <p className="text-sm text-red-600">{githubError}</p> : null}
-              {githubSuccess ? <p className="text-sm text-emerald-600">{githubSuccess}</p> : null}
+              {githubMode === "existing" ? (
+                <>
+                  <label className="block">
+                    <span className="eyebrow mb-1.5 block">Repository</span>
+                    <select
+                      value={githubSelectedRepo}
+                      onChange={(event) => {
+                        const nextRepo = event.target.value;
+                        setGitHubSelectedRepo(nextRepo);
+
+                        const matched = githubRepoOptions.find((repo) => repo.full_name === nextRepo);
+                        if (matched && (!githubSelectedBranch || githubSelectedBranch === "main")) {
+                          setGitHubSelectedBranch(matched.default_branch || "main");
+                        }
+                      }}
+                      disabled={githubLoadingRepos}
+                      className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3 py-2.5 text-sm text-ink outline-none transition focus:border-clay disabled:opacity-60"
+                    >
+                      <option value="">Select repository</option>
+                      {githubRepoOptions.map((repo) => (
+                        <option key={repo.id} value={repo.full_name}>
+                          {repo.full_name}{repo.private ? " (private)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <label className="block">
+                      <span className="eyebrow mb-1.5 block">Branch</span>
+                      <input
+                        type="text"
+                        value={githubSelectedBranch}
+                        onChange={(event) => setGitHubSelectedBranch(event.target.value)}
+                        placeholder="main"
+                        className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="eyebrow mb-1.5 block">Path</span>
+                      <input
+                        type="text"
+                        value={githubSelectedPath}
+                        onChange={(event) => setGitHubSelectedPath(event.target.value)}
+                        placeholder="docs/file.md"
+                        className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                      />
+                    </label>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <label className="block">
+                    <span className="eyebrow mb-1.5 block">New repository name</span>
+                    <input
+                      type="text"
+                      value={githubNewRepoName}
+                      onChange={(event) => setGitHubNewRepoName(event.target.value)}
+                      placeholder="my-document-repo"
+                      className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                    />
+                  </label>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="block">
+                      <span className="eyebrow mb-1.5 block">Visibility</span>
+                      <div className="flex gap-1 rounded-sm border border-rule-strong bg-paper-raised p-1">
+                        <button
+                          type="button"
+                          onClick={() => setGitHubNewRepoPrivate(true)}
+                          className={`flex-1 rounded-sm px-3 py-1.5 text-sm font-medium transition ${
+                            githubNewRepoPrivate ? "bg-ink text-paper" : "text-ink-soft hover:text-ink"
+                          }`}
+                        >
+                          Private
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setGitHubNewRepoPrivate(false)}
+                          className={`flex-1 rounded-sm px-3 py-1.5 text-sm font-medium transition ${
+                            !githubNewRepoPrivate ? "bg-ink text-paper" : "text-ink-soft hover:text-ink"
+                          }`}
+                        >
+                          Public
+                        </button>
+                      </div>
+                    </div>
+
+                    <label className="block">
+                      <span className="eyebrow mb-1.5 block">Path</span>
+                      <input
+                        type="text"
+                        value={githubSelectedPath}
+                        onChange={(event) => setGitHubSelectedPath(event.target.value)}
+                        placeholder="docs/file.md"
+                        className="w-full rounded-sm border border-rule-strong bg-paper-raised px-3 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay"
+                      />
+                    </label>
+                  </div>
+
+                  <p className="text-xs text-ink-faint">
+                    Creates a new repository on your GitHub account, initialised with a README on its
+                    default branch, then links this document to it.
+                  </p>
+                </>
+              )}
+
+              {githubError ? <p className="text-sm text-signal-danger">{githubError}</p> : null}
+              {githubSuccess ? <p className="text-sm text-pine">{githubSuccess}</p> : null}
 
               {githubPreviewDiff.length > 0 ? (
-                <pre className="max-h-56 overflow-auto rounded-lg bg-slate-950 p-3 text-xs leading-5 whitespace-pre-wrap text-slate-100">{githubPreviewDiff
+                <pre className="max-h-56 overflow-auto rounded-sm border border-rule bg-paper-sunk p-3 font-mono text-xs leading-5 whitespace-pre-wrap text-ink-soft">{githubPreviewDiff
                   .map((change) => {
                     if (change.added) {
                       return `+ ${change.value}`;
@@ -2674,29 +2870,44 @@ export default function EditorPage() {
               ) : null}
 
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void loadGitHubRepos();
-                    }}
-                    disabled={githubLoadingRepos}
-                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
-                  >
-                    {githubLoadingRepos ? "Loading repos..." : "Refresh repos"}
-                  </button>
+                {githubMode === "existing" ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void loadGitHubRepos();
+                      }}
+                      disabled={githubLoadingRepos}
+                      className="rounded-sm border border-rule-strong bg-paper-card px-3.5 py-2.5 text-sm text-ink-soft transition hover:border-ink hover:text-ink disabled:opacity-60"
+                    >
+                      {githubLoadingRepos ? "Loading repos..." : "Refresh repos"}
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void handleConnectGitHub();
-                    }}
-                    disabled={githubSaving || githubLoadingRepos}
-                    className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
-                  >
-                    {githubSaving ? "Connecting..." : "Connect"}
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleConnectGitHub();
+                      }}
+                      disabled={githubSaving || githubLoadingRepos}
+                      className="rounded-sm bg-ink px-4 py-2.5 text-sm font-medium text-paper transition hover:bg-ink-soft disabled:opacity-60"
+                    >
+                      {githubSaving ? "Connecting..." : "Connect"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleCreateGitHubRepo();
+                      }}
+                      disabled={githubCreatingRepo}
+                      className="rounded-sm bg-ink px-4 py-2.5 text-sm font-medium text-paper transition hover:bg-ink-soft disabled:opacity-60"
+                    >
+                      {githubCreatingRepo ? "Creating repo..." : "Create & link"}
+                    </button>
+                  </div>
+                )}
 
                 <div className="flex items-center gap-2">
                   <button
@@ -2705,7 +2916,7 @@ export default function EditorPage() {
                       void handlePreviewPullFromGitHub();
                     }}
                     disabled={githubPreviewLoading || !githubRepo || !githubPath}
-                    className="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-60"
+                    className="rounded-sm border border-pine/35 bg-pine-wash px-3.5 py-2.5 text-sm font-medium text-pine transition hover:bg-pine hover:text-paper disabled:opacity-60"
                   >
                     {githubPreviewLoading ? "Previewing..." : "Preview changes"}
                   </button>
@@ -2715,7 +2926,7 @@ export default function EditorPage() {
                       void handlePullFromGitHub();
                     }}
                     disabled={githubPulling || !githubPreviewReady}
-                    className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-600 disabled:opacity-60"
+                    className="rounded-sm bg-pine px-3.5 py-2.5 text-sm font-medium text-paper transition hover:opacity-90 disabled:opacity-60"
                   >
                     {githubPulling ? "Pulling..." : "Pull now"}
                   </button>
@@ -2727,51 +2938,52 @@ export default function EditorPage() {
       ) : null}
 
       {historyOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-4xl rounded-xl border border-slate-200 bg-white p-4 shadow-xl md:p-5">
-            <div className="flex items-center justify-between gap-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 px-4 backdrop-blur-[2px]" role="dialog" aria-modal="true">
+          <div className="reveal w-full max-w-4xl rounded-sm border border-rule bg-paper-card shadow-lg">
+            <div className="flex items-start justify-between gap-3 border-b border-rule px-5 py-3.5 md:px-6">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Document history</h2>
-                <p className="text-sm text-slate-500">Restore old versions or compare any two snapshots.</p>
+                <p className="eyebrow text-clay">History</p>
+                <h2 className="font-display mt-0.5 text-lg font-semibold tracking-tight text-ink">Document history</h2>
+                <p className="mt-0.5 text-sm text-ink-faint">Restore old versions or compare any two snapshots.</p>
               </div>
               <button
                 type="button"
                 onClick={() => setHistoryOpen(false)}
-                className="rounded-md px-2 py-1 text-sm text-slate-600 transition hover:bg-slate-100"
+                className="rounded-sm border border-rule-strong px-2.5 py-1 text-sm text-ink-soft transition hover:border-ink hover:text-ink"
               >
                 Close
               </button>
             </div>
 
-            <div className="mt-4 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="rounded-lg border border-slate-200">
-                <div className="border-b border-slate-200 px-3 py-2">
-                  <p className="text-sm font-medium text-slate-900">Versions</p>
+            <div className="grid gap-4 px-5 py-5 md:px-6 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="rounded-sm border border-rule">
+                <div className="border-b border-rule px-3 py-2">
+                  <p className="eyebrow">Versions</p>
                 </div>
                 {historyLoading ? (
-                  <p className="px-3 py-4 text-sm text-slate-500">Loading versions...</p>
+                  <p className="px-3 py-4 text-sm text-ink-faint">Loading versions…</p>
                 ) : historyError ? (
-                  <p className="px-3 py-4 text-sm text-red-600">{historyError}</p>
+                  <p className="px-3 py-4 text-sm text-signal-danger">{historyError}</p>
                 ) : versions.length === 0 ? (
-                  <p className="px-3 py-4 text-sm text-slate-500">No versions yet.</p>
+                  <p className="px-3 py-6 text-center text-sm text-ink-faint">No versions yet.</p>
                 ) : (
-                  <ul className="max-h-[24rem] divide-y divide-slate-200 overflow-auto">
+                  <ul className="max-h-[24rem] divide-y divide-rule overflow-auto">
                     {versions.map((version) => (
                       <li key={version.id} className="px-3 py-3">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
-                            <p className="text-sm font-medium text-slate-900">Version {version.version_number}</p>
-                            <p className="mt-1 text-xs text-slate-500">
+                            <p className="font-display text-base font-semibold text-ink">Version {version.version_number}</p>
+                            <p className="mt-1 text-xs text-ink-faint">
                               {getVersionLabel(version)} · {formatVersionTime(version.created_at)}
                             </p>
-                            <p className="mt-1 text-xs text-slate-500">Created by {version.created_by || "Unknown"}</p>
-                            {version.type ? <p className="mt-1 text-[11px] uppercase tracking-[0.18em] font-semibold text-slate-500">{version.type === "auto" ? "Auto" : version.type === "manual" ? "Manual" : "Restored"}</p> : null}
+                            <p className="mt-1 text-xs text-ink-faint">Created by {version.created_by || "Unknown"}</p>
+                            {version.type ? <p className="mt-1 text-[11px] uppercase tracking-[0.18em] font-semibold text-clay">{version.type === "auto" ? "Auto" : version.type === "manual" ? "Manual" : "Restored"}</p> : null}
                           </div>
                           <div className="flex flex-wrap gap-2">
                             <button
                               type="button"
                               onClick={() => handleSelectVersion(version.id)}
-                              className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                              className="rounded-sm border border-rule-strong px-2.5 py-1.5 text-xs font-medium text-ink-soft transition hover:bg-paper-sunk"
                             >
                               View
                             </button>
@@ -2788,7 +3000,7 @@ export default function EditorPage() {
                                 setCompareLeftContent("");
                                 setCompareRightContent("");
                               }}
-                              className="rounded-md border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                              className="rounded-sm border border-rule-strong px-2.5 py-1.5 text-xs font-medium text-ink-soft transition hover:bg-paper-sunk"
                             >
                               Compare
                             </button>
@@ -2798,7 +3010,7 @@ export default function EditorPage() {
                                 onClick={() => {
                                   void handleRestoreVersion(version.id);
                                 }}
-                                className="rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 transition hover:bg-amber-100"
+                                className="rounded-sm border border-clay/40 bg-clay-wash px-2.5 py-1.5 text-xs font-medium text-clay transition hover:bg-clay hover:text-paper"
                               >
                                 Restore
                               </button>
@@ -2812,13 +3024,13 @@ export default function EditorPage() {
               </div>
 
               <div className="space-y-4">
-                <div className="rounded-lg border border-slate-200 p-3">
-                  <p className="text-sm font-medium text-slate-900">Selected version</p>
+                <div className="rounded-sm border border-rule p-3">
+                  <p className="eyebrow">Selected version</p>
                   {versions.find((version) => version.id === selectedVersionId) ? (
                     (() => {
                       const selectedVersion = versions.find((version) => version.id === selectedVersionId)!;
                       return (
-                        <div className="mt-2 text-sm text-slate-600">
+                        <div className="mt-2 text-sm text-ink-soft">
                           <p>Version {selectedVersion.version_number}</p>
                           <p>{selectedVersion.title || "Untitled"}</p>
                           <p>{formatVersionTime(selectedVersion.created_at)}</p>
@@ -2827,15 +3039,15 @@ export default function EditorPage() {
                       );
                     })()
                   ) : (
-                    <p className="mt-2 text-sm text-slate-500">Select a version to inspect it.</p>
+                    <p className="mt-2 text-sm text-ink-faint">Select a version to inspect it.</p>
                   )}
                 </div>
 
-                <div className="rounded-lg border border-slate-200 p-3">
-                  <p className="text-sm font-medium text-slate-900">Compare versions</p>
+                <div className="rounded-sm border border-rule p-3">
+                  <p className="eyebrow">Compare versions</p>
                   {compareLeftVersion || compareRightVersion ? (
-                    <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                      <p className="font-medium text-slate-700">Comparing:</p>
+                    <div className="mt-2 rounded-sm border border-rule bg-paper-raised px-3 py-2 text-xs text-ink-soft">
+                      <p className="eyebrow text-[0.6rem]">Comparing</p>
                       <p>
                         {compareLeftVersion ? `Version ${compareLeftVersion.version_number} (${getVersionTypeLabel(compareLeftVersion)})` : "Select first version"}
                       </p>
@@ -2846,7 +3058,7 @@ export default function EditorPage() {
                     <select
                       value={compareLeftId ?? ""}
                       onChange={(event) => setCompareLeftId(event.target.value || null)}
-                      className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-slate-400"
+                      className="rounded-sm border border-rule-strong bg-paper-raised px-3 py-2.5 text-sm text-ink outline-none transition focus:border-clay"
                     >
                       <option value="">Select first version</option>
                       {versions.map((version) => (
@@ -2858,7 +3070,7 @@ export default function EditorPage() {
                     <select
                       value={compareRightId ?? ""}
                       onChange={(event) => setCompareRightId(event.target.value || null)}
-                      className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-slate-400"
+                      className="rounded-sm border border-rule-strong bg-paper-raised px-3 py-2.5 text-sm text-ink outline-none transition focus:border-clay"
                     >
                       <option value="">Select second version</option>
                       {versions.map((version) => (
@@ -2873,16 +3085,16 @@ export default function EditorPage() {
                         void handleCompareVersions();
                       }}
                       disabled={compareLoading}
-                      className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:opacity-60"
+                      className="rounded-sm bg-ink px-3.5 py-2.5 text-sm font-medium text-paper transition hover:bg-ink-soft disabled:opacity-60"
                     >
                       {compareLoading ? "Comparing..." : "Compare"}
                     </button>
                   </div>
 
-                  {compareError ? <p className="mt-3 text-sm text-red-600">{compareError}</p> : null}
+                  {compareError ? <p className="mt-3 text-sm text-signal-danger">{compareError}</p> : null}
                   {(compareLeftContent || compareRightContent) ? (
                     <div
-                      className="prose max-w-none mt-3 max-h-80 overflow-auto rounded-lg border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-800"
+                      className="prose max-w-none mt-3 max-h-80 overflow-auto rounded-sm border border-rule bg-paper-card p-3 text-sm leading-6 text-ink-soft"
                       dangerouslySetInnerHTML={{ __html: diffHtml }}
                     />
                   ) : null}
@@ -2894,52 +3106,82 @@ export default function EditorPage() {
       ) : null}
 
       {logsOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-4 shadow-xl md:p-5">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-slate-900">Activity logs</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 px-4 backdrop-blur-[2px]" role="dialog" aria-modal="true">
+          <div className="reveal w-full max-w-2xl rounded-sm border border-rule bg-paper-card shadow-lg">
+            <div className="flex items-center justify-between gap-3 border-b border-rule px-5 py-3.5 md:px-6">
+              <div>
+                <p className="eyebrow text-clay">Activity</p>
+                <h2 className="font-display mt-0.5 text-lg font-semibold tracking-tight text-ink">Activity logs</h2>
+              </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     void loadActivityLogs();
                   }}
-                  className="rounded-md border border-slate-300 px-3 py-1 text-sm text-slate-700 transition hover:bg-slate-100"
+                  className="rounded-sm border border-rule-strong px-3 py-1.5 text-sm text-ink-soft transition hover:border-ink hover:text-ink"
                 >
                   Refresh
                 </button>
                 <button
                   type="button"
                   onClick={() => setLogsOpen(false)}
-                  className="rounded-md px-2 py-1 text-sm text-slate-600 transition hover:bg-slate-100"
+                  className="rounded-sm border border-rule-strong px-2.5 py-1 text-sm text-ink-soft transition hover:border-ink hover:text-ink"
                 >
                   Close
                 </button>
               </div>
             </div>
 
-            {logsError ? <p className="mt-3 text-sm text-red-600">{logsError}</p> : null}
+            <div className="px-5 py-5 md:px-6">
+              {logsError ? <p className="mb-3 text-sm text-signal-danger">{logsError}</p> : null}
 
-            <div className="mt-4 rounded-lg border border-slate-200">
-              {logsLoading ? (
-                <p className="px-3 py-4 text-sm text-slate-500">Loading activity...</p>
-              ) : activityLogs.length === 0 ? (
-                <p className="px-3 py-4 text-sm text-slate-500">No activity yet.</p>
-              ) : (
-                <ul className="max-h-96 divide-y divide-slate-200 overflow-auto">
-                  {activityLogs.map((log) => (
-                    <li key={log.id} className="flex items-center justify-between gap-3 px-3 py-3">
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">{log.name || log.email || "Anonymous"}</p>
-                        <p className="text-xs text-slate-500">{log.action}</p>
-                      </div>
-                      <p className="text-xs text-slate-500">{formatLogTime(log.created_at)}</p>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              <div className="rounded-sm border border-rule">
+                {logsLoading ? (
+                  <p className="px-3 py-4 text-sm text-ink-faint">Loading activity…</p>
+                ) : activityLogs.length === 0 ? (
+                  <p className="px-3 py-6 text-center text-sm text-ink-faint">No activity yet.</p>
+                ) : (
+                  <ul className="max-h-96 divide-y divide-rule overflow-auto">
+                    {activityLogs.map((log) => (
+                      <li key={log.id} className="flex items-center justify-between gap-3 px-3 py-3">
+                        <div>
+                          <p className="text-sm font-medium text-ink">{log.name || log.email || "Anonymous"}</p>
+                          <p className="font-mono text-[11px] uppercase tracking-wider text-clay">{log.action}</p>
+                        </div>
+                        <p className="text-xs text-ink-faint">{formatLogTime(log.created_at)}</p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </div>
+        </div>
+      ) : null}
+
+      {aiPanelOpen ? (
+        <div className="fixed inset-y-0 right-0 z-50 flex max-w-full p-4">
+          <AIAskPanel
+            documentText={editorInstanceRef.current?.getText() ?? content}
+            onClose={() => setAiPanelOpen(false)}
+            onInsert={
+              canEdit
+                ? (text) => {
+                    const editorInstance = editorInstanceRef.current;
+                    if (!editorInstance) {
+                      return;
+                    }
+                    const endPos = editorInstance.state.doc.content.size;
+                    editorInstance
+                      .chain()
+                      .focus()
+                      .insertContentAt(endPos, `\n\n${text}`)
+                      .run();
+                  }
+                : undefined
+            }
+          />
         </div>
       ) : null}
     </main>

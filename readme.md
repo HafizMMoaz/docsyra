@@ -149,6 +149,24 @@ These are required for auth and encryption flows and should stay server-side:
 - `TWO_FACTOR_SECRET_KEY` - Encrypts TOTP secrets at rest.
 - Any provider secrets required by OAuth, email delivery, or deployment tooling.
 
+### AI Assistant
+
+The in-editor AI features (`/api/ai`) are multi-provider. Configuration is read
+from the environment:
+
+- `AI_PROVIDER` - Which provider to use: `anthropic` (default), `openai`, `groq`, or `gemini`.
+- `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GROQ_API_KEY` / `GEMINI_API_KEY` - The API key for the chosen provider (secret).
+- `ANTHROPIC_MODEL` / `OPENAI_MODEL` / `GROQ_MODEL` / `GEMINI_MODEL` - Optional model override; each provider has a sensible default.
+
+**Local development:** create `docsyra_app/.dev.vars` (git-ignored), set
+`AI_PROVIDER` and the matching `*_API_KEY`, then restart `npm run dev`.
+
+**Production / preview:** set the API key as a Wrangler secret —
+`npx wrangler pages secret put ANTHROPIC_API_KEY` — and set `AI_PROVIDER`
+either as a secret or in `wrangler.jsonc` `vars`.
+
+Without a configured key, the AI UI still opens but `/api/ai` returns an error.
+
 ## Collaboration Service
 
 The collaboration worker in `docsyra-collab/` hosts Yjs document rooms behind a Durable Object.

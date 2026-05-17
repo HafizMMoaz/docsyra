@@ -422,19 +422,24 @@ function LoginPageContent() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-10">
-      <div className="mx-auto flex min-h-[80vh] w-full max-w-md items-center justify-center">
-        <section className="w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h1 className="text-center text-2xl font-semibold tracking-tight text-slate-900">
-            Welcome to Docsyra
-          </h1>
-          <p className="mt-1 text-center text-sm text-slate-500">Sign in to continue</p>
+    <main className="flex min-h-screen items-center justify-center bg-paper px-5 py-12">
+      <section className="w-full max-w-sm">
+        <div className="mb-9 flex items-center justify-center gap-2">
+          <span className="font-display text-lg font-bold tracking-tight text-ink">Docsyra</span>
+        </div>
 
-          <div className="mt-6 space-y-3">
+        <h1 className="font-display text-center text-[1.7rem] font-bold tracking-tight text-ink">
+          Sign in to continue
+        </h1>
+        <p className="mt-2 text-center text-sm text-ink-faint">
+          Continue with a provider, a passkey, or your email.
+        </p>
+
+          <div className="mt-8 grid gap-px overflow-hidden rounded-sm border border-rule-strong">
             <button
               type="button"
               onClick={handleGoogleClick}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              className="flex w-full items-center justify-center gap-2.5 bg-paper px-4 py-3 text-sm font-medium text-ink transition hover:bg-paper-sunk"
             >
               <FaGoogle className="h-4 w-4" />
               Continue with Google
@@ -443,7 +448,7 @@ function LoginPageContent() {
             <button
               type="button"
               onClick={handleGithubClick}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              className="flex w-full items-center justify-center gap-2.5 bg-paper px-4 py-3 text-sm font-medium text-ink transition hover:bg-paper-sunk"
             >
               <FaGithub className="h-4 w-4" />
               Continue with GitHub
@@ -452,7 +457,7 @@ function LoginPageContent() {
             <button
               type="button"
               onClick={handlePasskeyLogin}
-              className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2.5 bg-paper px-4 py-3 text-sm font-medium text-ink transition hover:bg-paper-sunk disabled:opacity-50"
               disabled={passkeyLoading || loading || twoFactorRequired}
             >
               <FaKey className="h-4 w-4" />
@@ -460,13 +465,13 @@ function LoginPageContent() {
             </button>
           </div>
 
-          <div className="my-5 flex items-center gap-3">
-            <div className="h-px flex-1 bg-slate-200" />
-            <span className="text-xs uppercase tracking-wide text-slate-400">or</span>
-            <div className="h-px flex-1 bg-slate-200" />
+          <div className="my-7 flex items-center gap-3">
+            <div className="h-px flex-1 bg-rule" />
+            <span className="eyebrow text-ink-faint">or by email</span>
+            <div className="h-px flex-1 bg-rule" />
           </div>
 
-          <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
+          <div className="mb-5 grid grid-cols-2 rounded-sm border border-rule-strong">
             <button
               type="button"
               onClick={() => {
@@ -476,11 +481,11 @@ function LoginPageContent() {
                 setError(null);
                 setMessage(null);
               }}
-              className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition ${authMode === "password" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
+              className={`flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-semibold transition ${authMode === "password" ? "bg-ink text-paper" : "bg-paper text-ink-soft hover:bg-paper-sunk"}`}
               disabled={loading}
             >
               <FaLock className="h-3 w-3" />
-              Login with Password
+              Password
             </button>
             <button
               type="button"
@@ -492,16 +497,16 @@ function LoginPageContent() {
                 setError(null);
                 setMessage(null);
               }}
-              className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition ${authMode === "otp" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
+              className={`flex items-center justify-center gap-2 border-l border-rule-strong px-3 py-2.5 text-xs font-semibold transition ${authMode === "otp" ? "bg-ink text-paper" : "bg-paper text-ink-soft hover:bg-paper-sunk"}`}
               disabled={loading}
             >
               <FaEnvelope className="h-3 w-3" />
-              Login with Email OTP
+              Email OTP
             </button>
           </div>
 
           <form
-            className="space-y-3"
+            className="space-y-4"
             onSubmit={
               twoFactorRequired
                 ? handleValidateTwoFactor
@@ -517,8 +522,8 @@ function LoginPageContent() {
             }
           >
             {!twoFactorRequired ? (
-              <>
-                <label htmlFor="email" className="block text-sm font-medium text-slate-700">
+              <div className="space-y-1.5">
+                <label htmlFor="email" className="eyebrow block text-ink-faint">
                   Email
                 </label>
                 <input
@@ -527,10 +532,10 @@ function LoginPageContent() {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   placeholder="you@example.com"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none ring-0 transition placeholder:text-slate-400 focus:border-slate-400"
+                  className="w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay focus:ring-1 focus:ring-clay disabled:bg-paper-sunk disabled:text-ink-faint"
                   disabled={loading || (authMode === "password" ? step !== "email" : otpStep === "code")}
                 />
-              </>
+              </div>
             ) : null}
 
             {!twoFactorRequired && (authMode === "password" ? step !== "email" : otpStep !== "email") ? (
@@ -548,7 +553,7 @@ function LoginPageContent() {
                   setError(null);
                   setMessage(null);
                 }}
-                className="text-xs font-medium text-slate-500 underline underline-offset-2"
+                className="text-xs font-medium text-clay underline underline-offset-2 hover:text-ink"
                 disabled={loading}
               >
                 Use a different email
@@ -556,8 +561,8 @@ function LoginPageContent() {
             ) : null}
 
             {!twoFactorRequired && authMode === "password" && (step === "login" || step === "register") ? (
-              <>
-                <label htmlFor="password" className="block text-sm font-medium text-slate-700">
+              <div className="space-y-1.5">
+                <label htmlFor="password" className="eyebrow block text-ink-faint">
                   Password
                 </label>
                 <input
@@ -566,15 +571,15 @@ function LoginPageContent() {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   placeholder="Enter your password"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none ring-0 transition placeholder:text-slate-400 focus:border-slate-400"
+                  className="w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay focus:ring-1 focus:ring-clay"
                   disabled={loading}
                 />
-              </>
+              </div>
             ) : null}
 
             {!twoFactorRequired && authMode === "password" && step === "register" ? (
-              <>
-                <label htmlFor="confirm-password" className="block text-sm font-medium text-slate-700">
+              <div className="space-y-1.5">
+                <label htmlFor="confirm-password" className="eyebrow block text-ink-faint">
                   Confirm Password
                 </label>
                 <input
@@ -583,15 +588,15 @@ function LoginPageContent() {
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
                   placeholder="Retype your password"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none ring-0 transition placeholder:text-slate-400 focus:border-slate-400"
+                  className="w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-3 text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay focus:ring-1 focus:ring-clay"
                   disabled={loading}
                 />
-              </>
+              </div>
             ) : null}
 
             {!twoFactorRequired && authMode === "otp" && otpStep === "code" ? (
-              <>
-                <label htmlFor="otp-code" className="block text-sm font-medium text-slate-700">
+              <div className="space-y-1.5">
+                <label htmlFor="otp-code" className="eyebrow block text-ink-faint">
                   One-time code
                 </label>
                 <input
@@ -600,16 +605,16 @@ function LoginPageContent() {
                   value={otpCode}
                   onChange={(event) => setOtpCode(event.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
                   placeholder="123456"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none ring-0 transition placeholder:text-slate-400 focus:border-slate-400"
+                  className="w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-3 font-mono text-base tracking-[0.4em] text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay focus:ring-1 focus:ring-clay"
                   disabled={loading}
                   inputMode="numeric"
                 />
-              </>
+              </div>
             ) : null}
 
             {twoFactorRequired ? (
-              <>
-                <label htmlFor="two-factor-code" className="block text-sm font-medium text-slate-700">
+              <div className="space-y-1.5">
+                <label htmlFor="two-factor-code" className="eyebrow block text-ink-faint">
                   Authenticator or backup code
                 </label>
                 <input
@@ -618,17 +623,25 @@ function LoginPageContent() {
                   value={twoFactorCode}
                   onChange={(event) => setTwoFactorCode(event.target.value.trim().toUpperCase())}
                   placeholder="123456 or BACKUPCODE"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none ring-0 transition placeholder:text-slate-400 focus:border-slate-400"
+                  className="w-full rounded-sm border border-rule-strong bg-paper px-3.5 py-3 font-mono text-sm text-ink outline-none transition placeholder:text-ink-ghost focus:border-clay focus:ring-1 focus:ring-clay"
                   disabled={loading}
                 />
-              </>
+              </div>
             ) : null}
 
-            {error ? <p className="text-sm text-red-600">{error}</p> : null}
-            {message ? <p className="text-sm text-slate-600">{message}</p> : null}
+            {error ? (
+              <p className="rounded-sm border border-signal-danger border-l-2 bg-paper px-3 py-2 text-sm text-signal-danger">
+                {error}
+              </p>
+            ) : null}
+            {message ? (
+              <p className="rounded-sm border border-rule border-l-2 border-l-clay bg-paper-sunk px-3 py-2 text-sm text-ink-soft">
+                {message}
+              </p>
+            ) : null}
             <button
               type="submit"
-              className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
+              className="flex w-full items-center justify-center gap-2 rounded-sm bg-ink px-4 py-3.5 text-sm font-medium text-paper transition hover:bg-ink-soft disabled:opacity-60"
               disabled={loading}
             >
               {loading
@@ -644,17 +657,20 @@ function LoginPageContent() {
                     : step === "login"
                       ? "Login"
                       : "Create account"}
-            </button>
+          </button>
           </form>
-        </section>
-      </div>
+
+          <p className="mt-7 text-center text-xs text-ink-ghost">
+            A calm surface for writing together.
+          </p>
+      </section>
     </main>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<main className="min-h-screen bg-slate-50 px-4 py-10" />}>
+    <Suspense fallback={<main className="min-h-screen bg-paper" />}>
       <LoginPageContent />
     </Suspense>
   );
