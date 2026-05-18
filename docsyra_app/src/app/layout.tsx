@@ -26,6 +26,9 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Docsyra — A focused workspace for collaborative documents",
   description: "A knowledge management and documentation platform",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
