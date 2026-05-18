@@ -700,7 +700,12 @@ function mapAISkill(row: DbAISkillRecord): AISkill {
   };
 }
 
-function normalizeAISkillInput(input: AISkillInput): AISkillInput {
+function normalizeAISkillInput(input: AISkillInput): {
+  name: string;
+  description: string | null;
+  instructions: string;
+  enabled: boolean;
+} {
   return {
     name: input.name.trim(),
     description: input.description?.trim() || null,
